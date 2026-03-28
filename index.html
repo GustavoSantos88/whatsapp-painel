@@ -17,8 +17,21 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
-    <script src="assets/js/config.js"></script>
-    <script src="assets/js/auth.js"></script>
+    <script>
+        const version = Date.now();
+
+        const scripts = [
+            "assets/js/config.js",
+            "assets/js/auth.js"
+        ];
+
+        scripts.forEach(src => {
+            const script = document.createElement("script");
+            script.src = src + "?v=" + version;
+            script.defer = true;
+            document.body.appendChild(script);
+        });
+    </script>
 </body>
 
 </html>

@@ -33,18 +33,42 @@
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
 
-    <script src="assets/js/config.js"></script>
-    <script src="assets/js/api.js"></script>
-    <script src="assets/js/auth.js"></script>
-    <script src="assets/js/router.js"></script>
-    <script src="assets/js/socket.js"></script>
-    <script src="assets/js/ui.js"></script>
+    <script>
+        const version = Date.now();
 
-    <script src="assets/js/modules/dashboard.js"></script>
-    <script src="assets/js/modules/sessions.js"></script>
-    <script src="assets/js/modules/messages.js"></script>
-    <script src="assets/js/modules/webhooks.js"></script>
-    <script src="assets/js/modules/admin.js"></script>
+        const scripts = [
+            // base
+            "assets/js/config.js",
+            "assets/js/api.js",
+            "assets/js/auth.js",
+            "assets/js/router.js",
+            "assets/js/socket.js",
+            "assets/js/ui.js",
+
+            // módulos
+            "assets/js/modules/dashboard.js",
+            "assets/js/modules/sessions.js",
+            "assets/js/modules/messages.js",
+            "assets/js/modules/webhooks.js",
+            "assets/js/modules/admin.js"
+        ];
+
+        function loadScriptsSequentially(scripts) {
+            if (!scripts.length) return;
+
+            const script = document.createElement("script");
+            script.src = scripts[0] + "?v=" + version;
+            script.defer = true;
+
+            script.onload = () => {
+                loadScriptsSequentially(scripts.slice(1));
+            };
+
+            document.body.appendChild(script);
+        }
+
+        loadScriptsSequentially(scripts);
+    </script>
 
 </body>
 
