@@ -1,6 +1,6 @@
 const CONFIG = {
-    API_URL: "http://whatsapp.techsystembrasil.com.br/api",
-    SOCKET_URL: "http://whatsapp.techsystembrasil.com.br",
+    API_URL: "/api",
+    SOCKET_URL: window.location.origin,
     BRAND_NAME: "ZapCloud"
 }
 
