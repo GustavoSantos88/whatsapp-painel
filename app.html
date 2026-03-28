@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <title>Painel</title>
+    <link rel="stylesheet" href="assets/css/base.css">
+</head>
+
+<body class="light">
+
+    <div class="layout">
+
+        <aside class="sidebar">
+            <h2 id="brandSidebar"></h2>
+
+            <button onclick="loadPage('dashboard')">Dashboard</button>
+            <button onclick="loadPage('sessions')">Sessões</button>
+            <button onclick="loadPage('messages')">Mensagens</button>
+            <button onclick="loadPage('webhooks')">Webhooks</button>
+            <button id="adminBtn" style="display:none;" onclick="loadPage('admin')">Admin</button>
+
+            <hr>
+
+            <button onclick="toggleTheme()">Tema</button>
+            <button onclick="logout()">Sair</button>
+        </aside>
+
+        <main class="content" id="content"></main>
+
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+
+    <script src="assets/js/config.js"></script>
+    <script src="assets/js/api.js"></script>
+    <script src="assets/js/auth.js"></script>
+    <script src="assets/js/router.js"></script>
+    <script src="assets/js/socket.js"></script>
+    <script src="assets/js/ui.js"></script>
+
+    <script src="assets/js/modules/dashboard.js"></script>
+    <script src="assets/js/modules/sessions.js"></script>
+    <script src="assets/js/modules/messages.js"></script>
+    <script src="assets/js/modules/webhooks.js"></script>
+    <script src="assets/js/modules/admin.js"></script>
+
+</body>
+
+</html>
