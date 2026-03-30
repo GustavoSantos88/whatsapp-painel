@@ -350,11 +350,15 @@ async function loadMessageSessions() {
 async function loadConversations() {
 
     const select = document.getElementById("msgSession")
+
     if (!select) return
+    if (!select.value) return
 
     const sessionId = select.value
 
     currentSession = sessionId
+
+
 
     const res = await axios.get(CONFIG.API_URL + "/" + sessionId + "?limit=200")
 

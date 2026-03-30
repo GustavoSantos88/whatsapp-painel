@@ -1,363 +1,180 @@
-// ==============================
-// SOCKET GLOBAL
-// ==============================
-if (!window.socket) {
+// sessions.js
 
-    window.socket = io(CONFIG.SOCKET_URL, {
-        transports: ["websocket"],
-        reconnection: true,
-        reconnectionAttempts: Infinity,
-        reconnectionDelay: 2000
+if (!window.qrCache) window.qrCache = {};
+
+function setupSocketListeners() {
+    const socket = window.socket;
+    if (!socket) {
+        setTimeout(setupSocketListeners, 1000);
+        return;
+    }
+
+    socket.off("qr_code");
+    socket.on("qr_code", ({ sessionId, qrImageBase64 }) => {
+        console.log("📥 [SOCKET] QR Recebido:", sessionId);
+        window.qrCache[sessionId] = qrImageBase64;
+        const card = document.getElementById(`session_${sessionId}`);
+        if (card) renderQRCode(card, qrImageBase64);
     });
 
+    socket.off("session_status_update");
+    socket.on("session_status_update", (data) => {
+        updateSessionStatus(data.sessionId, data.status);
+    });
 }
-
-window.socket.on("connect", () => {
-    console.log("✅ Socket conectado:", window.socket.id);
-});
-
-window.socket.onAny((event, data) => {
-    console.log("📡 EVENTO SOCKET:", event, data);
-});
-
-
-// ==============================
-// CACHE
-// ==============================
-
-const pendingQRCodes = {};
-const sessionCache = {};
-
-
-// ==============================
-// RENDER PÁGINA
-// ==============================
 
 function sessionsPage() {
-
+    setupSocketListeners();
     return `
-        <h1>Sessões</h1>
-
-        <button class="primary-btn" onclick="createSession()">
-            + Criar Sessão
-        </button>
-
-        <div id="sessionsLoading">Carregando sessões...</div>
-
-        <div id="sessionsList" class="sessions-grid" style="display:none;"></div>
+        <div class="sessions-view">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
+                <h1 style="margin:0; font-size: 24px;">Conexões WhatsApp</h1>
+                <button class="primary-btn" onclick="createSession()" style="margin-bottom:0; background: #25d366;">
+                    + Nova Instância
+                </button>
+            </div>
+            <div id="sessionsLoading" style="text-align:center; padding: 60px;">
+                <div class="loader-spinner" style="margin: 0 auto;"></div>
+                <p style="margin-top: 15px; color: #666;">Carregando sessões...</p>
+            </div>
+            <div id="sessionsList" class="sessions-grid" style="display:none;"></div>
+        </div>
     `;
-
 }
 
-
-// ==============================
-// CARREGAR SESSÕES
-// ==============================
-
 async function loadSessions() {
+    if (window.socket && window.socket.connected) {
+        const userId = localStorage.getItem("userId");
+        if (userId) window.socket.emit("join", `user_${userId}`);
+    }
 
     const loading = document.getElementById("sessionsLoading");
     const list = document.getElementById("sessionsList");
-
     if (!loading || !list) return;
 
     try {
-
         const res = await axios.get(`${CONFIG.API_URL}/sessions`);
-
-        if (!res.data.success) {
-            throw new Error(res.data.error || "Erro API");
-        }
-
         const sessions = res.data.data || [];
 
         loading.style.display = "none";
         list.style.display = "grid";
-
-        if (sessions.length === 0) {
-
-            list.innerHTML = "<p>Nenhuma sessão criada.</p>";
-            return;
-
-        }
-
-        sessionCache.length = 0;
-
-        list.innerHTML = sessions
-            .map(session => renderSessionCard(session))
-            .join("");
+        list.innerHTML = sessions.length ? sessions.map(s => renderSessionCard(s)).join("") : "<p>Nenhuma conexão ativa.</p>";
 
         sessions.forEach(session => {
-
-            sessionCache[session.session_id] = session;
-
-            const qr = pendingQRCodes[session.session_id];
-            if (!qr) return;
-
-            const card = document.getElementById(`session_${session.session_id}`);
-
-            if (card) {
-
-                renderQRCode(card, qr);
-                delete pendingQRCodes[session.session_id];
-
+            const sid = session.session_id;
+            const qr = window.qrCache[sid] || session.last_qr;
+            if (qr && session.status !== 'connected') {
+                renderQRCode(document.getElementById(`session_${sid}`), qr);
+            } else if (session.status === "connecting") {
+                window.socket.emit("request_session_qr", { sessionId: sid });
             }
-
         });
-
-    } catch (err) {
-
-        console.error("Erro ao carregar sessões:", err);
-        loading.innerText = "Erro ao carregar sessões";
-
-    }
-
+    } catch (err) { console.error(err); }
 }
 
-
-// ==============================
-// RENDER CARD
-// ==============================
-
 function renderSessionCard(session) {
-
-    const statusColor =
-        session.status === "connected"
-            ? "green"
-            : session.status === "connecting"
-                ? "orange"
-                : "red";
-
-    const qrHtml = session.status === "connecting"
-        ? `<div class="qr-container">
-                <p>Aguardando QRCode...</p>
-           </div>`
-        : "";
+    const isConnecting = session.status === "connecting" || session.status === "pending";
+    const isConnected = session.status === "connected";
+    const statusClass = isConnected ? "green" : isConnecting ? "orange" : "red";
 
     return `
-        <div class="card session-card ${session.status === "connecting" ? "new-session" : ""}" id="session_${session.session_id}">
-            
+        <div class="card session-card" id="session_${session.session_id}">
             <div class="session-header">
-                <h3>${session.session_id}</h3>
-                <span class="status ${statusColor}">${session.status}</span>
+                <div style="display: flex; flex-direction: column;">
+                    <span style="font-weight: 700; color: #111827;">WhatsApp Web</span>
+                    <small style="color: #6b7280;">ID: ${session.session_id.substring(0, 8)}</small>
+                </div>
+                <span class="status ${statusClass}">${session.status}</span>
             </div>
 
-            <p><strong>Webhook:</strong> ${session.webhook || "-"}</p>
-            <p><strong>Tipo de Conta:</strong> ${session.is_business ? "Business" : "Pessoal"}</p>
+            <div class="qr-container">
+                ${isConnected ?
+            '<div style="text-align:center;"><span style="font-size: 50px;">✅</span><p style="color:#059669; font-weight:bold; margin-top:10px;">Conectado</p></div>' :
+            isConnecting ?
+                '<div class="loader-spinner"></div><p style="margin-top:15px; font-size: 13px; color: #4b5563;">Gerando QR Code...</p>' :
+                '<p style="color: #9ca3af;">Desconectado</p>'
+        }
+            </div>
 
-            <div class="session-actions">
-                <button onclick="deleteSession('${session.session_id}')">
+            <div class="session-actions" style="margin-top:20px; display:flex; gap:10px;">
+                ${!isConnected ? `
+                    <button class="primary-btn" style="flex: 2; margin-bottom: 0; background:#25d366;" 
+                            onclick="window.socket.emit('request_session_qr', {sessionId:'${session.session_id}'})">
+                        🔄 Atualizar
+                    </button>
+                ` : ''}
+                <button class="danger-btn" style="flex: 1;" onclick="deleteSession('${session.session_id}')">
                     Excluir
                 </button>
             </div>
-
-            ${qrHtml}
-
         </div>
     `;
-
 }
 
-
-// ==============================
-// RENDER QR CODE
-// ==============================
-
-function renderQRCode(card, qrImageBase64) {
-
+function renderQRCode(card, b64) {
     if (!card) return;
+    const container = card.querySelector(".qr-container");
+    const status = card.querySelector(".status").innerText.toLowerCase();
 
-    let container = card.querySelector(".qr-container");
+    if (status === "connected") return;
 
-    if (!container) {
-
-        container = document.createElement("div");
-        container.className = "qr-container";
-
-        card.appendChild(container);
-
+    if (container) {
+        container.innerHTML = `
+            <img src="${b64}" alt="QR Code">
+            <p style="color: #6366f1; font-size: 12px; margin-top: 10px; font-weight: 600;">Escaneie o código no celular</p>
+        `;
+        container.style.border = "2px solid #6366f144";
+        container.style.background = "#fff";
     }
-
-    container.innerHTML = "";
-
-    const text = document.createElement("p");
-    text.innerText = "Escaneie o QRCode";
-
-    const img = document.createElement("img");
-    img.src = qrImageBase64;
-    img.style.width = "160px";
-    img.style.height = "160px";
-
-    container.appendChild(text);
-    container.appendChild(img);
-
 }
-
-
-// ==============================
-// RECEBER QR CODE
-// ==============================
-
-window.socket.on("qr_code", ({ sessionId, qrImageBase64 }) => {
-
-    console.log("📲 QRCode recebido:", sessionId);
-
-    let card = document.getElementById(`session_${sessionId}`);
-
-    if (!card) {
-
-        pendingQRCodes[sessionId] = qrImageBase64;
-
-        // tenta renderizar novamente
-        setTimeout(loadSessions, 500);
-
-        return;
-
-    }
-
-    renderQRCode(card, qrImageBase64);
-
-});
-
-
-// ==============================
-// ATUALIZAR STATUS
-// ==============================
 
 function updateSessionStatus(sessionId, status) {
-
     const card = document.getElementById(`session_${sessionId}`);
+    if (!card) return;
 
-    if (!card) {
+    const span = card.querySelector(".status");
+    const container = card.querySelector(".qr-container");
+    const actions = card.querySelector(".session-actions");
 
-        loadSessions();
-        return;
-
+    if (span) {
+        span.innerText = status;
+        span.className = `status ${status === 'connected' ? 'green' : 'orange'}`;
     }
-
-    const statusSpan = card.querySelector(".status");
-
-    const color =
-        status === "connected"
-            ? "green"
-            : status === "connecting"
-                ? "orange"
-                : "red";
-
-    statusSpan.innerText = status;
-    statusSpan.className = "status " + color;
 
     if (status === "connected") {
-
-        const qrContainer = card.querySelector(".qr-container");
-
-        if (qrContainer) {
-            qrContainer.remove();
+        if (container) {
+            container.innerHTML = '<div style="text-align:center;"><span style="font-size: 50px;">✅</span><p style="color:#059669; font-weight:bold; margin-top:10px;">Conectado</p></div>';
+            container.style.background = "#f0fdf4";
+            container.style.border = "1px solid #bbf7d0";
         }
-
-        delete pendingQRCodes[sessionId];
-
+        if (actions) {
+            const refreshBtn = actions.querySelector(".primary-btn");
+            if (refreshBtn) refreshBtn.remove();
+        }
+        delete window.qrCache[sessionId];
     }
-
 }
-
-
-// ==============================
-// SOCKET INIT
-// ==============================
-
-function initSocketForSessions() {
-
-    if (!window.socket) return;
-
-    const userId = localStorage.getItem("userId");
-
-    console.log("Entrando na sala:", `user_${userId}`);
-
-    if (userId) {
-
-        window.socket.emit("join", `user_${userId}`);
-
-    }
-
-    window.socket.on("session_status_update", data => {
-
-        console.log("🔄 Status atualizado:", data);
-
-        updateSessionStatus(data.sessionId, data.status);
-
-    });
-
-}
-
-
-// ==============================
-// CRIAR SESSÃO
-// ==============================
 
 async function createSession() {
+    const btn = event.currentTarget;
     try {
-        const res = await axios.post(`${CONFIG.API_URL}/sessions/connect`, {})
-
-        if (!res.data.success) {
-            // Lança o erro com a mensagem do servidor
-            throw new Error(res.data.error || "Erro ao criar sessão")
-        }
-
-        const userId = localStorage.getItem("userId")
-
-        if (window.socket && userId) {
-            window.socket.emit("join", `user_${userId}`)
-        }
-
-        await new Promise(r => setTimeout(r, 600))
-
-        await loadSessions()
-
+        btn.disabled = true;
+        btn.innerText = "Criando...";
+        const res = await axios.post(`${CONFIG.API_URL}/sessions/connect`, {});
+        if (res.data.success) await loadSessions();
     } catch (err) {
-        // Se for erro do Axios com response
-        const errorMsg = err.response?.data?.error || err.message || "Erro ao criar sessão"
-        console.error(err.response?.data || err)
-        alert(errorMsg)
+        alert("Erro ao criar. Verifique o limite de sessões.");
+    } finally {
+        btn.disabled = false;
+        btn.innerText = "+ Nova Instância";
     }
 }
 
-
-// ==============================
-// DELETAR SESSÃO
-// ==============================
-
-async function deleteSession(sessionId) {
-
-    if (!confirm("Deseja realmente excluir essa sessão?")) return;
-
+async function deleteSession(id) {
+    if (!confirm("Remover esta conexão?")) return;
     try {
-
-        await axios.delete(`${CONFIG.API_URL}/sessions/${sessionId}`);
-
-        // limpa cache de QR
-        delete pendingQRCodes[sessionId];
-
-        await loadSessions();
-
-    } catch (err) {
-
-        console.error(err);
-        alert("Erro ao excluir sessão");
-
-    }
-
+        await axios.delete(`${CONFIG.API_URL}/sessions/${id}`);
+        delete window.qrCache[id];
+        loadSessions();
+    } catch (err) { alert("Erro ao deletar."); }
 }
-
-
-// ==============================
-// INIT
-// ==============================
-
-document.addEventListener("DOMContentLoaded", () => {
-
-    initSocketForSessions();
-
-    loadSessions();
-
-});
