@@ -1,5 +1,5 @@
 /* ==============================
-   1. VARIÁVEIS DE TEMA (DARK/LIGHT)
+   1. VARIÁVEIS DE TEMA
 ============================== */
 :root {
     --bg-main: #f3f4f6;
@@ -13,7 +13,6 @@
     --accent-hover: #4f46e5;
 }
 
-/* Aplicado quando a classe .dark estiver no body ou layout */
 .dark {
     --bg-main: #0f172a;
     --bg-card: #1e293b;
@@ -60,7 +59,7 @@ body {
     cursor: pointer;
     border-radius: 6px;
     text-align: left;
-    transition: background 0.2s;
+    transition: 0.2s;
     font-size: 14px;
 }
 
@@ -99,7 +98,7 @@ body {
 }
 
 /* ==============================
-   5. LOGIN (RESTRICTO)
+   5. LOGIN
 ============================== */
 .login-card {
     width: 320px;
@@ -111,7 +110,6 @@ body {
 
 .login-card input {
     width: 93%;
-    /* Mantido conforme seu original */
     margin: 8px 0;
     padding: 10px;
     background: var(--input-bg);
@@ -193,7 +191,6 @@ body {
     width: 190px !important;
     height: 190px !important;
     background: white;
-    /* QR sempre branco para leitura */
     border: 1px solid #eee;
     border-radius: 8px;
     padding: 8px;
@@ -210,17 +207,12 @@ body {
     border-radius: 8px;
     cursor: pointer;
     font-weight: 600;
-    transition: background 0.2s;
+    transition: 0.2s;
     margin-bottom: 20px;
 }
 
 .primary-btn:hover {
     background: var(--accent-hover);
-}
-
-.primary-btn:disabled {
-    background: #a5b4fc;
-    cursor: not-allowed;
 }
 
 .danger-btn {
@@ -231,10 +223,6 @@ body {
     border-radius: 8px;
     cursor: pointer;
     font-weight: 600;
-}
-
-.danger-btn:hover {
-    background: rgba(239, 68, 68, 0.1);
 }
 
 .status {
@@ -261,12 +249,16 @@ body {
 }
 
 /* ==============================
-   9. CHAT / MESSAGES
+   9. CHAT / MESSAGES (AJUSTADO)
 ============================== */
 .chat-layout {
     display: flex;
     height: calc(100vh - 120px);
-    font-family: Arial;
+    overflow: hidden;
+    /* Importante para manter o scroll interno */
+    background: var(--bg-card);
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
 }
 
 .chat-conversations {
@@ -278,13 +270,13 @@ body {
 }
 
 .chat-search {
-    padding: 8px;
+    padding: 12px;
     border-bottom: 1px solid var(--border-color);
 }
 
 .chat-search input {
     width: 100%;
-    padding: 8px;
+    padding: 10px;
     border-radius: 6px;
     border: 1px solid var(--border-color);
     background: var(--input-bg);
@@ -292,16 +284,27 @@ body {
     box-sizing: border-box;
 }
 
+#conversationsList {
+    flex: 1;
+    overflow-y: auto;
+    /* Scroll apenas nos nomes */
+}
+
 .chat-conversation {
     padding: 15px;
     border-bottom: 1px solid var(--border-color);
     cursor: pointer;
     color: var(--text-main);
-    transition: background 0.2s;
+    transition: 0.2s;
 }
 
 .chat-conversation:hover {
     background: var(--input-bg);
+}
+
+.chat-conversation.active {
+    background: var(--accent) !important;
+    color: white !important;
 }
 
 .chat-messages {
@@ -316,12 +319,12 @@ body {
     border-bottom: 1px solid var(--border-color);
     background: var(--bg-card);
     font-weight: bold;
-    color: var(--text-main);
 }
 
 #chatMessages {
     flex: 1;
     overflow-y: auto;
+    /* Scroll apenas nas mensagens */
     padding: 20px;
     display: flex;
     flex-direction: column;
@@ -335,12 +338,15 @@ body {
     color: var(--text-main);
     font-size: 14px;
     border: 1px solid var(--border-color);
+    align-self: flex-start;
+    max-width: 80%;
 }
 
 .chat-sent .chat-bubble {
     background: #059669;
     color: white;
     border: none;
+    align-self: flex-end;
 }
 
 .chat-input {
@@ -380,4 +386,59 @@ body {
     100% {
         transform: rotate(360deg);
     }
+}
+
+/* ==============================
+   11. WEBHOOK COMPONENTS
+============================== */
+.webhook-form-card {
+    margin-bottom: 25px;
+    padding: 25px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+}
+
+.webhook-form-grid {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    margin-top: 15px;
+}
+
+.form-group {
+    flex: 1;
+    min-width: 200px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: var(--text-muted);
+    font-size: 13px;
+}
+
+.input-field {
+    width: 100%;
+    padding: 10px;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    background: var(--input-bg);
+    color: var(--text-main);
+    box-sizing: border-box;
+    font-size: 14px;
+}
+
+.webhook-card-url {
+    word-break: break-all;
+    font-family: monospace;
+    font-size: 11px;
+    background: var(--bg-main);
+    padding: 8px;
+    border-radius: 4px;
+    display: block;
+    margin-top: 5px;
+    border: 1px solid var(--border-color);
 }

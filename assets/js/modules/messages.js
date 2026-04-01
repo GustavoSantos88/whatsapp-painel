@@ -13,46 +13,35 @@ let messagesPageActive = false
 /* =========================
    FORMATAR DATA
 ========================= */
-
 function formatTime(date) {
-
     const d = new Date(date)
-
     return d.toLocaleTimeString("pt-BR", {
         hour: "2-digit",
         minute: "2-digit"
     })
-
 }
 
 function formatDay(date) {
-
     const d = new Date(date)
-
     return d.toLocaleDateString("pt-BR", {
         day: "2-digit",
         month: "2-digit",
         year: "numeric"
     })
-
 }
 
 
 /* =========================
    NORMALIZA NUMERO
 ========================= */
-
 function normalizeNumber(number) {
-
     if (!number) return null
-
     number = number
         .replace('@c.us', '')
         .replace('@s.whatsapp.net', '')
         .replace('@lid', '')
         .replace(/\D/g, '')
 
-    // adiciona DDI Brasil
     if (!number.startsWith("55")) {
         number = "55" + number
     }
@@ -60,13 +49,11 @@ function normalizeNumber(number) {
     const ddd = number.substring(2, 4)
     let phone = number.substring(4)
 
-    // adiciona 9º dígito se necessário
     if (phone.length === 8) {
         phone = "9" + phone
     }
 
     number = "55" + ddd + phone
-
     return number
 }
 
@@ -74,73 +61,26 @@ function normalizeNumber(number) {
 /* =========================
    MEDIA RENDER
 ========================= */
-
 function renderMediaMessage(url, fileName) {
-
     if (!url) return ""
-
     const ext = fileName?.split('.').pop()?.toLowerCase()
-
-    /* ======================
-       IMAGEM
-    ====================== */
 
     if (["jpg", "jpeg", "png", "gif", "webp"].includes(ext)) {
         return `<img src="${url}" style="max-width:160px;border-radius:8px">`
     }
-
-    /* ======================
-       VIDEO
-    ====================== */
-
     if (["mp4", "webm"].includes(ext)) {
         return `<video controls width="160"><source src="${url}"></video>`
     }
-
-    /* ======================
-       AUDIO
-    ====================== */
-
     if (["mp3", "wav", "ogg"].includes(ext)) {
         return `<audio controls src="${url}"></audio>`
     }
-
-    /* ======================
-       PDF (visualização real)
-    ====================== */
-
-    if (
-        ext === "pdf" ||
-        url.includes(".pdf") ||
-        url.startsWith("data:application/pdf")
-    ) {
-
+    if (ext === "pdf" || url.includes(".pdf") || url.startsWith("data:application/pdf")) {
         return `
         <div class="chat-pdf">
-
-            <iframe 
-                src="${url}" 
-                style="
-                    width:160px;
-                    height:160px;
-                    border:none;
-                    border-radius:8px;
-                    background:#fff;
-                ">
-            </iframe>
-
-            <div style="margin-top:4px;font-size:10px">
-                📄 ${fileName || "PDF"}
-            </div>
-
-        </div>
-        `
+            <iframe src="${url}" style="width:160px;height:160px;border:none;border-radius:8px;background:#fff;"></iframe>
+            <div style="margin-top:4px;font-size:10px">📄 ${fileName || "PDF"}</div>
+        </div>`
     }
-
-    /* ======================
-       OUTROS ARQUIVOS
-    ====================== */
-
     return `<a href="${url}" target="_blank">📎 ${fileName}</a>`
 }
 
@@ -148,138 +88,99 @@ function renderMediaMessage(url, fileName) {
 /* =========================
    PREVIEW
 ========================= */
-
 function renderMediaPreview(files) {
-
     return files.map((file, index) => {
-
         const url = URL.createObjectURL(file)
-
         return `
-            <div style="
-                position:relative;
-                display:inline-block;
-                margin:5px;
-            ">
-
-                <!-- botão remover -->
-                <span onclick="removeSingleMedia(${index})"
-                    style="
-                        position:absolute;
-                        top:-6px;
-                        right:-6px;
-                        background:#ff4d4f;
-                        color:#fff;
-                        width:18px;
-                        height:18px;
-                        border-radius:50%;
-                        font-size:12px;
-                        display:flex;
-                        align-items:center;
-                        justify-content:center;
-                        cursor:pointer;
-                        z-index:10;
-                    ">
-                    ×
-                </span>
-
+            <div style="position:relative; display:inline-block; margin:5px;">
+                <span onclick="removeSingleMedia(${index})" style="position:absolute; top:-6px; right:-6px; background:#ff4d4f; color:#fff; width:18px; height:18px; border-radius:50%; font-size:12px; display:flex; align-items:center; justify-content:center; cursor:pointer; z-index:10;">×</span>
                 ${renderMediaMessage(url, file.name)}
-
-            </div>
-        `
-
+            </div>`
     }).join("")
 }
 
 function removeSingleMedia(index) {
-
     if (!selectedMedia) return
-
     selectedMedia.splice(index, 1)
-
     const preview = document.getElementById("mediaPreview")
-
     if (!selectedMedia.length) {
         removeMedia()
         return
     }
-
     preview.innerHTML = renderMediaPreview(selectedMedia)
-
 }
 
 
 /* =========================
-   PAGE
+   PAGE (LAYOUT CORRIGIDO)
 ========================= */
-
 function messagesPage() {
-
     messagesPageActive = true
-
-    setTimeout(initMessagesPage, 0)
+    setTimeout(initMessagesPage, 50)
 
     return `
-    
-<div class="chat-layout">
+    <div class="chat-layout">
+        <!-- Barra Lateral de Conversas -->
+        <div class="chat-conversations">
+            <select id="msgSession" style="padding:15px; border:none; border-bottom:1px solid var(--border-color); background:var(--bg-card); font-weight:bold;"></select>
+            <div class="chat-search" style="padding:10px; border-bottom:1px solid var(--border-color);">
+                <input id="searchChat" placeholder="🔍 Buscar conversa..." style="width:100%; padding:10px; border-radius:8px; border:1px solid var(--border-color); background:var(--input-bg); color:var(--text-main);">
+            </div>
+            <div id="conversationsList">
+                <div class="center" style="padding:20px; font-size:13px; color:var(--text-muted);">Carregando conversas...</div>
+            </div>
+        </div>
 
-<div class="chat-conversations">
-
-<select id="msgSession"></select>
-
-<div class="chat-search">
-<input id="searchChat" placeholder="Buscar conversa">
-</div>
-
-<div id="conversationsList"></div>
-
-</div>
-
-
-<div class="chat-messages">
-
-<div id="chatHeader" class="chat-header">
-Selecione uma conversa
-</div>
-
-<div id="chatMessages"></div>
-
-<div id="mediaPreview"></div>
-
-<div class="chat-input">
-
-<input id="chatText" placeholder="Digite uma mensagem">
-
-<input type="file" id="chatFile" multiple style="display:none">
-
-<button onclick="document.getElementById('chatFile').click()">📎</button>
-
-<button onclick="sendChatMessage()">Enviar</button>
-
-</div>
-
-</div>
-
-</div>
-
-`
-
+        <!-- Área de Mensagens -->
+        <div class="chat-messages">
+            <div id="chatHeader" class="chat-header" style="padding:18px; background:var(--bg-card); border-bottom:1px solid var(--border-color); font-weight:bold;">
+                Selecione uma conversa
+            </div>
+            <div id="chatMessages">
+                <div class="center" style="color:var(--text-muted);">Nenhuma conversa selecionada</div>
+            </div>
+            <div id="mediaPreview"></div>
+            <div class="chat-input" style="padding:15px; background:var(--bg-card); border-top:1px solid var(--border-color); display:flex; gap:10px; align-items:center;">
+                <input type="file" id="chatFile" multiple style="display:none">
+                <button class="primary-btn" style="margin:0; padding:10px;" onclick="document.getElementById('chatFile').click()">📎</button>
+                <input id="chatText" placeholder="Escreva uma mensagem..." style="flex:1; padding:12px; border-radius:8px; border:1px solid var(--border-color); background:var(--input-bg); color:var(--text-main);">
+                <button class="primary-btn" style="margin:0; padding:10px 20px;" onclick="sendChatMessage()">Enviar</button>
+            </div>
+        </div>
+    </div>`
 }
 
+/* =========================
+   SELECIONAR CHAT (NOVA FUNÇÃO ESSENCIAL)
+========================= */
+function selectChat(number) {
+    currentChatNumber = number
+    document.getElementById("chatHeader").innerText = "Conversando com: " + number
+
+    // Atualiza a classe 'active' na lista lateral
+    renderConversations()
+
+    // Renderiza as mensagens desse contato
+    if (typeof renderMessages === "function") {
+        renderMessages()
+    }
+
+    // Scroll para o final
+    const msgDiv = document.getElementById("chatMessages")
+    if (msgDiv) {
+        setTimeout(() => msgDiv.scrollTop = msgDiv.scrollHeight, 100)
+    }
+}
 
 /* =========================
    DESTROY PAGE
 ========================= */
-
 function destroyMessagesPage() {
-
     messagesPageActive = false
-
     if (pollingInterval) {
         clearInterval(pollingInterval)
         pollingInterval = null
     }
-
 }
 
 
