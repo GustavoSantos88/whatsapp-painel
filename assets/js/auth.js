@@ -27,9 +27,17 @@ function login() {
 }
 
 function logout() {
-    localStorage.clear()
-    window.location.href = "index.html"
+    localStorage.removeItem("token");
+    localStorage.removeItem("role");
+    localStorage.removeItem("userId");
+    localStorage.removeItem("plan");
+    localStorage.removeItem("name");
+    localStorage.removeItem("currentPage");
+
+    // NÃO remove o theme
+    window.location.href = "index.html";
 }
+
 
 function checkAuth() {
     const token = localStorage.getItem("token")
@@ -53,3 +61,36 @@ document.addEventListener("DOMContentLoaded", () => {
         document.body.classList.add(saved)
     }
 })
+
+// Captura o evento de Enter
+document.addEventListener("keydown", function (event) {
+    if (event.key === "Enter") {
+        validarCampos();
+    }
+});
+
+function validarCampos() {
+    const email = document.getElementById("email");
+    const senha = document.getElementById("password");
+
+    // Verifica se o email está preenchido e válido
+    if (!email.value) {
+        alert("Por favor, preencha o email.");
+        email.focus();
+        return;
+    } else if (!email.checkValidity()) {
+        alert("Digite um email válido.");
+        email.focus();
+        return;
+    }
+
+    // Verifica se a senha está preenchida
+    if (!senha.value) {
+        alert("Por favor, preencha a senha.");
+        senha.focus();
+        return;
+    }
+
+    // Se tudo estiver correto, chama login()
+    login();
+}

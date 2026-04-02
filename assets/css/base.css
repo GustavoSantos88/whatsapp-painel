@@ -30,8 +30,9 @@ body {
     font-family: 'Inter', sans-serif;
     background: var(--bg-main);
     color: var(--text-main);
-    transition: background 0.3s, color 0.3s;
+    transition: background 0.3s ease, color 0.3s ease;
 }
+
 
 /* ==============================
    3. LAYOUT PRINCIPAL
@@ -441,4 +442,36 @@ body {
     display: block;
     margin-top: 5px;
     border: 1px solid var(--border-color);
+}
+
+/* ==============================
+   RESPONSIVIDADE
+============================== */
+
+/* ==========================
+   1. LAYOUT PRINCIPAL
+========================== */
+@media (max-width: 1024px) {
+    .layout {
+        flex-direction: column;
+        height: auto;
+    }
+
+    .sidebar {
+        width: 100%;
+        flex-direction: row;
+        overflow-x: auto;
+        padding: 10px;
+    }
+
+    .sidebar button {
+        flex: 1 0 auto;
+        margin: 0 5px;
+        font-size: 13px;
+        text-align: center;
+    }
+
+    .content {
+        padding: 20px;
+    }
 }

@@ -3,20 +3,33 @@
 
 <head>
     <meta charset="UTF-8">
+    <!-- Responsividade -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login</title>
     <link rel="stylesheet" href="assets/css/base.css">
 </head>
 
-<body class="light center">
+<body class="center">
 
     <div class="login-card">
         <h1 id="brandName"></h1>
-        <input type="email" id="email" placeholder="Email">
-        <input type="password" id="password" placeholder="Senha">
-        <button onclick="login()">Entrar</button>
+        <input type="email" id="email" placeholder="Email" required autofocus>
+        <input type="password" id="password" placeholder="Senha" required>
+        <button onclick="validarCampos()">Entrar</button>
     </div>
 
     <script src="assets/js/js/axios.min.js"></script>
+
+    <script>
+        const saved = localStorage.getItem("theme");
+        if (saved) {
+            document.body.classList.add(saved);
+        } else {
+            document.body.classList.add("light"); // padrão
+        }
+    </script>
+
+
     <script>
         const version = Date.now();
 

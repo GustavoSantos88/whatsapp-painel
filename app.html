@@ -3,11 +3,13 @@
 
 <head>
     <meta charset="UTF-8">
+    <!-- Responsividade -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Painel</title>
     <link rel="stylesheet" href="assets/css/base.css">
 </head>
 
-<body class="light">
+<body>
 
     <div class="layout">
 
@@ -33,6 +35,17 @@
     <script src="assets/js/js/socket.io.min.js"></script>
 
     <script>
+        const saved = localStorage.getItem("theme");
+        if (saved) {
+            document.body.classList.add(saved);
+        } else {
+            document.body.classList.add("light"); // padrão
+        }
+    </script>
+
+
+    <script>
+
         const version = Date.now();
 
         const scripts = [
