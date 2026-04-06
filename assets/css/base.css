@@ -689,6 +689,111 @@ body {
 }
 
 /* ==============================
+   13. TELA ALTERAR SENHA
+============================== */
+.change-password-page {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 50px 20px;
+    min-height: 100vh;
+    background: var(--bg-main);
+}
+
+.change-password-page h1 {
+    margin-bottom: 30px;
+    color: var(--text-main);
+    font-size: 28px;
+    text-align: center;
+}
+
+.change-password-card {
+    background: var(--bg-card);
+    padding: 30px;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    width: 100%;
+    max-width: 400px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    box-sizing: border-box;
+}
+
+.change-password-card input {
+    padding: 12px;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    background: var(--input-bg);
+    color: var(--text-main);
+    font-size: 14px;
+    box-sizing: border-box;
+    transition: border 0.2s, box-shadow 0.2s;
+}
+
+.change-password-card input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+    outline: none;
+}
+
+.change-password-card .modal-actions,
+.change-password-card div {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.change-password-card button {
+    padding: 12px 20px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    border: none;
+    transition: 0.2s;
+    font-size: 14px;
+}
+
+.change-password-card .primary-btn {
+    background: var(--accent);
+    color: white;
+}
+
+.change-password-card .primary-btn:hover {
+    background: var(--accent-hover);
+    transform: translateY(-1px);
+    box-shadow: 0 3px 5px rgba(0, 0, 0, 0.1);
+}
+
+.change-password-card .primary-btn:active {
+    transform: translateY(0);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.change-password-card .danger-btn {
+    background: #ef4444;
+    color: white;
+}
+
+.change-password-card .danger-btn:hover {
+    background: #f87171;
+    transform: translateY(-1px);
+    box-shadow: 0 3px 5px rgba(0, 0, 0, 0.1);
+}
+
+.change-password-card .danger-btn:active {
+    transform: translateY(0);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+#changePasswordMessage {
+    margin-top: 10px;
+    font-size: 0.9rem;
+}
+
+/* ==============================
    RESPONSIVIDADE
 ============================== */
 

@@ -26,9 +26,11 @@ function setupSocketListeners() {
 function sessionsPage() {
     setupSocketListeners();
     return `
+        <h1>Conexões WhatsApp</h1>
+
         <div class="sessions-view">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
-                <h1 style="margin:0; font-size: 24px;">Conexões WhatsApp</h1>
+               
                 <button class="primary-btn" onclick="createSession()" style="margin-bottom:0; background: #25d366;">
                     + Nova Instância
                 </button>

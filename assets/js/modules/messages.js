@@ -119,6 +119,8 @@ function messagesPage() {
     setTimeout(initMessagesPage, 50)
 
     return `
+    <h1>Mensagem</h1>
+    
     <div class="chat-layout">
         <!-- Barra Lateral de Conversas -->
         <div class="chat-conversations">

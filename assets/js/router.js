@@ -14,6 +14,8 @@ function loadPage(page) {
         document.getElementById("adminBtn").style.display = "block"
     }
 
+    document.getElementById("changePasswordBtn").style.display = "block"
+
     // salva a página atual
     localStorage.setItem("currentPage", page)
 
@@ -43,6 +45,10 @@ function loadPage(page) {
 
     if (page === "admin") {
         initAdminPage()
+    }
+
+    if (page === "changePassword") {
+        initChangePasswordPage()
     }
 }
 
