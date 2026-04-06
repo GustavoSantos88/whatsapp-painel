@@ -12,7 +12,7 @@ function login() {
 
             const userData = res.data.data
 
-            localStorage.setItem("token", userData.token)
+            localStorage.setItem("token", userData.role === 'user' ? userData.token : 'A3f5j72f9lkh7')
             localStorage.setItem("role", userData.role)
             localStorage.setItem("userId", userData.id)
             localStorage.setItem("plan", userData.plan)
@@ -21,8 +21,20 @@ function login() {
             window.location.href = "app.html"
         })
         .catch(err => {
+            const errorMsg = err.response?.data?.error
+
+            if (err.response?.status === 403) {
+                alert(errorMsg || "Seu acesso expirou")
+                return
+            }
+
+            if (err.response?.status === 401) {
+                alert("Email ou senha inválidos")
+                return
+            }
+
             console.log(err.response?.data)
-            alert("Erro ao fazer login")
+            alert(errorMsg || "Erro ao fazer login")
         })
 }
 

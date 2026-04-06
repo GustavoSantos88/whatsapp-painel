@@ -98,6 +98,18 @@ body {
     color: white;
 }
 
+.top5 {
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+    /* tons de laranja/dourado */
+    color: white;
+    font-weight: bold;
+    border-radius: 0.5rem;
+    /* mesma estética do .highlight */
+    padding: 1rem;
+    text-align: center;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
 /* ==============================
    5. LOGIN
 ============================== */
@@ -140,9 +152,14 @@ body {
 }
 
 .stat p {
-    font-size: 28px;
+    font-size: 20px;
     font-weight: bold;
     margin-top: 10px;
+}
+
+.expired {
+    color: red;
+    font-weight: bold;
 }
 
 /* ==============================
@@ -214,16 +231,43 @@ body {
 
 .primary-btn:hover {
     background: var(--accent-hover);
+    /* preenchimento vermelho no hover */
+    color: white;
+    /* texto branco */
+    transform: translateY(-1px);
+    box-shadow: 0 3px 5px rgba(0, 0, 0, 0.1);
 }
 
+.primary-btn:active {
+    transform: translateY(0);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* DANGER BTN COMPACTO */
 .danger-btn {
-    padding: 10px;
-    background: transparent;
-    color: #ef4444;
-    border: 1.5px solid #ef4444;
+    padding: 12px 20px;
+    background: #ef4444;
+    border: none;
+    color: white;
     border-radius: 8px;
     cursor: pointer;
     font-weight: 600;
+    transition: 0.2s;
+    margin-bottom: 20px;
+}
+
+.danger-btn:hover {
+    background: #ef4444;
+    /* preenchimento vermelho no hover */
+    color: white;
+    /* texto branco */
+    transform: translateY(-1px);
+    box-shadow: 0 3px 5px rgba(0, 0, 0, 0.1);
+}
+
+.danger-btn:active {
+    transform: translateY(0);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .status {
@@ -442,6 +486,206 @@ body {
     display: block;
     margin-top: 5px;
     border: 1px solid var(--border-color);
+}
+
+/* ==============================
+   12. ADMIN PAGE (AJUSTADO)
+============================== */
+
+.admin-page {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+/* HEADER */
+.admin-page .admin-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+/* INPUT BUSCA */
+.admin-page .search-input {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background: var(--input-bg);
+    color: var(--text-main);
+}
+
+/* TABLE */
+.admin-page .table-wrapper {
+    background: var(--bg-card);
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+    overflow-x: auto;
+    /* permite rolagem horizontal */
+    -webkit-overflow-scrolling: touch;
+    /* rolagem suave no mobile */
+}
+
+/* opcional: força que a tabela não quebre linhas */
+.admin-page .admin-table {
+    width: 100%;
+    min-width: 600px;
+    /* largura mínima da tabela */
+    border-collapse: collapse;
+}
+
+.admin-page .admin-table th {
+    text-align: left;
+    padding: 12px;
+    background: var(--bg-main);
+    color: var(--text-muted);
+    font-size: 13px;
+}
+
+.admin-page .admin-table td {
+    padding: 12px;
+    border-top: 1px solid var(--border-color);
+}
+
+.admin-page .admin-table tr:hover {
+    background: var(--input-bg);
+}
+
+/* ACTIONS */
+.admin-page .actions {
+    display: flex;
+    gap: 8px;
+}
+
+/* BOTÕES */
+.admin-page .btn-edit {
+    background: #f59e0b;
+    /* dourado/laranja */
+    color: white;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 0.375rem;
+    cursor: pointer;
+    font-weight: 500;
+    transition: background 0.2s, transform 0.1s, box-shadow 0.2s;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.admin-page .btn-edit:hover {
+    background: #d97706;
+    /* dourado mais escuro */
+    transform: translateY(-1px);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
+}
+
+.admin-page .btn-edit:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* BOTÃO DELETE */
+.admin-page .btn-delete {
+    background: #ef4444;
+    /* vermelho */
+    color: white;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 0.375rem;
+    cursor: pointer;
+    font-weight: 500;
+    transition: background 0.2s, transform 0.1s, box-shadow 0.2s;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.admin-page .btn-delete:hover {
+    background: #f87171;
+    /* vermelho mais claro */
+    transform: translateY(-1px);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
+}
+
+.admin-page .btn-delete:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* MODAL */
+.admin-page .modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 999;
+    padding: 10px;
+    /* garante espaço lateral em telas pequenas */
+    box-sizing: border-box;
+}
+
+/* CONTEÚDO RESPONSIVO */
+.admin-page .modal-content {
+    background: var(--bg-card);
+    padding: 20px;
+    width: 100%;
+    max-width: 420px;
+    /* nunca maior que 420px */
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-height: 90vh;
+    /* nunca maior que 90% da altura da tela */
+    overflow-y: auto;
+    /* scroll vertical se necessário */
+    box-sizing: border-box;
+}
+
+/* MODAL RESPONSIVO */
+.admin-page .modal-content {
+    background: var(--bg-card);
+    padding: 20px;
+    width: min(420px, 90%);
+    /* largura máxima 420px, mas nunca maior que 90% da tela */
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    box-sizing: border-box;
+    /* garante padding dentro da largura */
+    max-height: 90vh;
+    /* não ultrapassa 90% da altura da tela */
+    overflow-y: auto;
+    /* adiciona scroll vertical se o conteúdo for maior */
+}
+
+.admin-page .hidden {
+    display: none;
+}
+
+/* INPUT + SELECT PADRONIZADOS */
+.admin-page .modal-content input,
+.admin-page .modal-content select {
+    width: 100%;
+    padding: 10px;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    background: var(--input-bg);
+    color: var(--text-main);
+    box-sizing: border-box;
+}
+
+/* BOTÕES DO MODAL */
+.admin-page .modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 10px;
 }
 
 /* ==============================

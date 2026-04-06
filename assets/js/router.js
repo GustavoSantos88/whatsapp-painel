@@ -2,7 +2,15 @@ function loadPage(page) {
     checkAuth()
 
     const role = localStorage.getItem("role")
+    if (role === "user") {
+        document.getElementById("dashboardBtn").style.display = "block"
+        document.getElementById("sessionsBtn").style.display = "block"
+        document.getElementById("messagesBtn").style.display = "block"
+        document.getElementById("webhooksBtn").style.display = "block"
+    }
+
     if (role === "admin") {
+        document.getElementById("dashboardBtn").style.display = "block"
         document.getElementById("adminBtn").style.display = "block"
     }
 
@@ -31,6 +39,10 @@ function loadPage(page) {
 
     if (page === "webhooks") {
         loadWebhooks()
+    }
+
+    if (page === "admin") {
+        initAdminPage()
     }
 }
 

@@ -12,10 +12,6 @@ window.onload = () => {
     if (brand) brand.innerText = CONFIG.BRAND_NAME
     if (sidebar) sidebar.innerText = CONFIG.BRAND_NAME
 
-    // const lastPage = localStorage.getItem("currentPage") || "dashboard"
-    // console.log("Página inicial carregada:", lastPage)
-    // loadPage(lastPage)
-
     const lastPage = localStorage.getItem("currentPage") || "dashboard"
     console.log("Página inicial carregada:", lastPage)
 

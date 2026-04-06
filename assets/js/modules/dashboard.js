@@ -1,5 +1,7 @@
 function dashboardPage() {
 
+    const role = localStorage.getItem("role")
+
     return `
         <h1>Dashboard</h1>
 
@@ -16,6 +18,13 @@ function dashboardPage() {
                 <p id="connectedSessions">0</p>
             </div>
 
+            ${role === 'admin' ? `
+            <div class="card stat expired">
+                <h3>Expirada</h3>
+                <p id="expiredSessions">0</p>
+            </div>
+            ` : ''}
+
             <div class="card stat">
                 <h3>Total Mensagens</h3>
                 <p id="totalMessages">0</p>
@@ -29,12 +38,20 @@ function dashboardPage() {
             <div class="card stat">
                 <h3>Recebidas</h3>
                 <p id="receivedMessages">0</p>
-            </div>
+            </div>            
 
             <div class="card stat highlight">
                 <h3>Plano</h3>
                 <p id="userPlan">-</p>
             </div>
+
+             ${role === 'admin' ? `
+            <div class="card stat top5">
+                <h3>Top 5 Usuários</h3>
+                <p id="userTop">-</p>
+            </div>
+            ` : ''}
+
         </div>
     `
 }
@@ -42,8 +59,15 @@ function dashboardPage() {
 async function loadDashboardData() {
 
     try {
+        const role = localStorage.getItem("role")
 
-        const res = await axios.get(CONFIG.API_URL + "/dashboard/metrics")
+        let endpoint = "/dashboard/metrics"
+
+        if (role === "admin") {
+            endpoint = "/admin/dashboard"
+        }
+
+        const res = await axios.get(CONFIG.API_URL + endpoint)
 
         console.log("Resposta API:", res.data)
 
@@ -51,7 +75,7 @@ async function loadDashboardData() {
             throw new Error("Erro na API")
         }
 
-        const data = res.data.data  // AQUI ESTÁ A CORREÇÃO
+        const data = res.data.data
 
         document.getElementById("dashboardLoading").style.display = "none"
         document.getElementById("dashboardGrid").style.display = "grid"
@@ -62,6 +86,11 @@ async function loadDashboardData() {
         document.getElementById("connectedSessions").innerText =
             data.sessions?.connected ?? 0
 
+        if (role === "admin") {
+            document.getElementById("expiredSessions").innerText =
+                data.sessions?.expired ?? 0
+        }
+
         document.getElementById("totalMessages").innerText =
             data.messages?.total ?? 0
 
@@ -71,8 +100,24 @@ async function loadDashboardData() {
         document.getElementById("receivedMessages").innerText =
             data.messages?.received ?? 0
 
-        document.getElementById("userPlan").innerText =
-            data.plan ?? "-"
+        if (role === "admin") {
+            document.getElementById("userPlan").innerText =
+                data.users.total ?? "-"
+
+            const userTopEl = document.getElementById("userTop")
+
+            if (!data.topUsers || data.topUsers.length === 0) {
+                userTopEl.innerHTML = "-"
+                return
+            }
+
+            userTopEl.innerHTML = data.topUsers
+                .map((user, index) => `<div>#${index + 1} - ID: ${user.user_id} (${user.messageCount} msgs)</div>`)
+                .join("")
+        } else {
+            document.getElementById("userPlan").innerText =
+                data.plan ?? "-"
+        }
 
     } catch (err) {
 
