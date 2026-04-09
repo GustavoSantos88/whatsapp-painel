@@ -744,48 +744,48 @@ async function loadMessageSessions() {
     await loadConversations()
 }
 
-async function loadConversations() {
+// async function loadConversations() {
 
-    if (!currentSessionId) {
-        console.warn("SessionId não definido")
-        return
-    }
+//     if (!currentSessionId) {
+//         console.warn("SessionId não definido")
+//         return
+//     }
 
-    const res = await axios.get(`${CONFIG.API_URL}/${currentSessionId}?limit=200`)
-    const messages = res.data.data || []
+//     const res = await axios.get(`${CONFIG.API_URL}/${currentSessionId}?limit=200`)
+//     const messages = res.data.data || []
 
-    const grouped = {}
+//     const grouped = {}
 
-    // Agrupa mensagens por contato
-    messages.forEach(m => {
-        const number = getContactNumber(m)
-        if (!number) return
-        if (!grouped[number]) grouped[number] = []
-        grouped[number].push(m)
-    })
+//     // Agrupa mensagens por contato
+//     messages.forEach(m => {
+//         const number = getContactNumber(m)
+//         if (!number) return
+//         if (!grouped[number]) grouped[number] = []
+//         grouped[number].push(m)
+//     })
 
-    Object.keys(grouped).forEach(number => {
+//     Object.keys(grouped).forEach(number => {
 
-        if (!conversationsCache[number]) conversationsCache[number] = []
+//         if (!conversationsCache[number]) conversationsCache[number] = []
 
-        // Inicializa Set de IDs para evitar duplicação
-        if (!conversationsCache[number]._ids) {
-            conversationsCache[number]._ids = new Set(conversationsCache[number].map(x => x.id))
-        }
+//         // Inicializa Set de IDs para evitar duplicação
+//         if (!conversationsCache[number]._ids) {
+//             conversationsCache[number]._ids = new Set(conversationsCache[number].map(x => x.id))
+//         }
 
-        grouped[number].forEach(m => {
-            if (!conversationsCache[number]._ids.has(m.id)) {
-                conversationsCache[number]._ids.add(m.id)
-                conversationsCache[number].push(m)
-            }
-        })
+//         grouped[number].forEach(m => {
+//             if (!conversationsCache[number]._ids.has(m.id)) {
+//                 conversationsCache[number]._ids.add(m.id)
+//                 conversationsCache[number].push(m)
+//             }
+//         })
 
-        // Ordena mensagens por timestamp
-        conversationsCache[number].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp))
-    })
+//         // Ordena mensagens por timestamp
+//         conversationsCache[number].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp))
+//     })
 
-    renderConversations()
-}
+//     renderConversations()
+// }
 
 /* =========================
    LOAD CONVERSAS
