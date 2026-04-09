@@ -668,35 +668,123 @@ async function initMessagesPage() {
 /* =========================
    SESSOES
 ========================= */
+// async function loadMessageSessions() {
+
+//     const select = document.getElementById("msgSession")
+//     if (!select) return
+
+//     const res = await axios.get(CONFIG.API_URL + "/sessions")
+
+//     select.innerHTML = res.data.data.map(s =>
+//         `<option value="${s.session_id}" data-phone="${s.phone_number}">
+//        ${s.profile_name ? s.profile_name : '+' + s.phone_number}
+//      </option>`).join('')
+
+//     // Ao carregar a lista de sessões
+//     const firstOption = select.options[0]
+//     currentSessionId = firstOption.value
+//     currentInstanceNumber = firstOption.dataset.phone || firstOption.getAttribute('data-phone') || firstOption.phone_number
+//     console.log("Sessão inicial:", currentSessionId, "Número da sessão:", currentInstanceNumber)
+
+//     select.addEventListener("change", (e) => {
+
+//         const selectedOption = e.target.options[e.target.selectedIndex]
+
+//         currentSessionId = e.target.value
+//         currentInstanceNumber = selectedOption.dataset.phone
+
+//         loadConversations()
+//     })
+
+//     loadConversations()
+// }
+
+/* =========================
+   SESSOES E CONVERSAS AJUSTADAS
+========================= */
 async function loadMessageSessions() {
 
     const select = document.getElementById("msgSession")
     if (!select) return
 
     const res = await axios.get(CONFIG.API_URL + "/sessions")
+    const sessions = res.data.data || []
 
-    select.innerHTML = res.data.data.map(s =>
+    select.innerHTML = sessions.map(s =>
         `<option value="${s.session_id}" data-phone="${s.phone_number}">
-       ${s.profile_name ? s.profile_name : '+' + s.phone_number}
-     </option>`).join('')
+            ${s.profile_name ? s.profile_name : '+' + s.phone_number}
+        </option>`
+    ).join('')
 
-    // Ao carregar a lista de sessões
+    if (!sessions.length) return
+
     const firstOption = select.options[0]
     currentSessionId = firstOption.value
-    currentInstanceNumber = firstOption.dataset.phone || firstOption.getAttribute('data-phone') || firstOption.phone_number
+    currentInstanceNumber = firstOption.dataset.phone || firstOption.getAttribute('data-phone')
+    currentSession = currentSessionId
+
     console.log("Sessão inicial:", currentSessionId, "Número da sessão:", currentInstanceNumber)
 
-    select.addEventListener("change", (e) => {
-
+    // Ao mudar de sessão
+    select.addEventListener("change", async (e) => {
         const selectedOption = e.target.options[e.target.selectedIndex]
-
         currentSessionId = e.target.value
         currentInstanceNumber = selectedOption.dataset.phone
+        currentSession = currentSessionId
 
-        loadConversations()
+        // Limpa conversas antigas para evitar confusão
+        conversationsCache = {}
+        unreadCounter = {}
+        currentChatNumber = null
+
+        await loadConversations()
     })
 
-    loadConversations()
+    // Carrega a primeira sessão
+    await loadConversations()
+}
+
+async function loadConversations() {
+
+    if (!currentSessionId) {
+        console.warn("SessionId não definido")
+        return
+    }
+
+    const res = await axios.get(`${CONFIG.API_URL}/${currentSessionId}?limit=200`)
+    const messages = res.data.data || []
+
+    const grouped = {}
+
+    // Agrupa mensagens por contato
+    messages.forEach(m => {
+        const number = getContactNumber(m)
+        if (!number) return
+        if (!grouped[number]) grouped[number] = []
+        grouped[number].push(m)
+    })
+
+    Object.keys(grouped).forEach(number => {
+
+        if (!conversationsCache[number]) conversationsCache[number] = []
+
+        // Inicializa Set de IDs para evitar duplicação
+        if (!conversationsCache[number]._ids) {
+            conversationsCache[number]._ids = new Set(conversationsCache[number].map(x => x.id))
+        }
+
+        grouped[number].forEach(m => {
+            if (!conversationsCache[number]._ids.has(m.id)) {
+                conversationsCache[number]._ids.add(m.id)
+                conversationsCache[number].push(m)
+            }
+        })
+
+        // Ordena mensagens por timestamp
+        conversationsCache[number].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp))
+    })
+
+    renderConversations()
 }
 
 /* =========================
