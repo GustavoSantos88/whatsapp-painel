@@ -604,9 +604,9 @@ function destroyMessagesPage() {
 ========================= */
 async function initMessagesPage() {
 
-    loadState()  // 🔥 Carrega estado salvo
-
     if (!document.getElementById("msgSession")) return
+
+    loadState()  // 🔥 Carrega estado salvo
 
     // 🔔 pedir permissão
     if ("Notification" in window) {
