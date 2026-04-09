@@ -604,9 +604,9 @@ function destroyMessagesPage() {
 ========================= */
 async function initMessagesPage() {
 
-    if (!document.getElementById("msgSession")) return
-
     loadState()  // 🔥 Carrega estado salvo
+
+    if (!document.getElementById("msgSession")) return
 
     // 🔔 pedir permissão
     if ("Notification" in window) {
@@ -671,9 +671,11 @@ async function initMessagesPage() {
 async function loadMessageSessions() {
 
     const select = document.getElementById("msgSession")
-    // if (!select) return
+    if (!select) return
 
     const res = await axios.get(CONFIG.API_URL + "/sessions")
+
+    console.log(res.data.data)
 
     select.innerHTML = res.data.data.map(s =>
         `<option value="${s.session_id}" data-phone="${s.phone_number}">
