@@ -675,19 +675,16 @@ async function loadMessageSessions() {
 
     const res = await axios.get(CONFIG.API_URL + "/sessions")
 
-    console.log(res.data.data)
-
     select.innerHTML = res.data.data.map(s =>
         `<option value="${s.session_id}" data-phone="${s.phone_number}">
-            ${s.profile_name ? s.profile_name : '+' + s.phone_number}
-        </option>`
-    ).join("")
+       ${s.profile_name ? s.profile_name : '+' + s.phone_number}
+     </option>`).join('')
 
-    // define inicial
-    const firstOption = select.options[select.selectedIndex]
-
-    currentSessionId = select.value
-    currentInstanceNumber = firstOption.dataset.phone
+    // Ao carregar a lista de sessões
+    const firstOption = select.options[0]
+    currentSessionId = firstOption.value
+    currentInstanceNumber = firstOption.dataset.phone || firstOption.getAttribute('data-phone') || firstOption.phone_number
+    console.log("Sessão inicial:", currentSessionId, "Número da sessão:", currentInstanceNumber)
 
     select.addEventListener("change", (e) => {
 
@@ -705,19 +702,66 @@ async function loadMessageSessions() {
 /* =========================
    LOAD CONVERSAS
 ========================= */
+// async function loadConversations() {
+
+//     const select = document.getElementById("msgSession")
+//     if (!select || !select.value) return
+
+//     const sessionId = select.value
+//     currentSession = sessionId
+
+//     const res = await axios.get(CONFIG.API_URL + "/" + sessionId + "?limit=200")
+//     const messages = res.data.data
+
+//     const grouped = {}
+
+//     messages.forEach(m => {
+//         const number = getContactNumber(m)
+//         if (!number) return
+//         if (!grouped[number]) grouped[number] = []
+//         grouped[number].push(m)
+//     })
+
+//     // ✅ Ordenar cada grupo por timestamp crescente
+//     Object.keys(grouped).forEach(number => {
+
+//         if (!conversationsCache[number]) {
+//             conversationsCache[number] = []
+//         }
+
+//         grouped[number].forEach(m => {
+
+//             const exists = conversationsCache[number].find(x => x.id === m.id)
+
+//             if (!exists) {
+//                 conversationsCache[number].push(m)
+//                 conversationsCache[number].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp))
+//             }
+
+//         })
+
+//         // 🔥 ordena SEMPRE
+//         conversationsCache[number].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp))
+
+//     })
+
+//     // ✅ Renderizar a lista já com a última mensagem correta
+//     renderConversations()
+// }
+
+/* =========================
+   LOAD CONVERSAS AJUSTADO
+========================= */
 async function loadConversations() {
 
-    const select = document.getElementById("msgSession")
-    if (!select || !select.value) return
+    if (!currentSession) return
 
-    const sessionId = select.value
-    currentSession = sessionId
-
-    const res = await axios.get(CONFIG.API_URL + "/" + sessionId + "?limit=200")
-    const messages = res.data.data
+    const res = await axios.get(`${CONFIG.API_URL}/${currentSession}?limit=200`)
+    const messages = res.data.data || []
 
     const grouped = {}
 
+    // Agrupa mensagens por contato
     messages.forEach(m => {
         const number = getContactNumber(m)
         if (!number) return
@@ -725,30 +769,25 @@ async function loadConversations() {
         grouped[number].push(m)
     })
 
-    // ✅ Ordenar cada grupo por timestamp crescente
     Object.keys(grouped).forEach(number => {
 
-        if (!conversationsCache[number]) {
-            conversationsCache[number] = []
+        if (!conversationsCache[number]) conversationsCache[number] = []
+        // Inicializa Set de IDs para evitar duplicação
+        if (!conversationsCache[number]._ids) {
+            conversationsCache[number]._ids = new Set(conversationsCache[number].map(x => x.id))
         }
 
         grouped[number].forEach(m => {
-
-            const exists = conversationsCache[number].find(x => x.id === m.id)
-
-            if (!exists) {
+            if (!conversationsCache[number]._ids.has(m.id)) {
+                conversationsCache[number]._ids.add(m.id)
                 conversationsCache[number].push(m)
-                conversationsCache[number].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp))
             }
-
         })
 
-        // 🔥 ordena SEMPRE
+        // Ordena mensagens por timestamp
         conversationsCache[number].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp))
-
     })
 
-    // ✅ Renderizar a lista já com a última mensagem correta
     renderConversations()
 }
 
@@ -878,6 +917,38 @@ function renderConversations() {
 /* =========================
    OPEN CHAT
 ========================= */
+// function openChat(number) {
+
+//     const normalized = normalizeNumber(number)
+//     currentChatNumber = normalized
+
+//     const messages = conversationsCache[normalized] || []
+
+//     if (messages.length) {
+//         // Pega apenas a última mensagem recebida
+//         const lastReceived = [...messages].reverse().find(m => m.direction === "received")
+//         if (lastReceived) {
+//             lastSeenTimestamp[normalized] = new Date(lastReceived.timestamp).getTime()
+//         }
+//     }
+
+//     // Zera o contador de não lidos
+//     unreadCounter[normalized] = 0
+
+//     // Atualiza cabeçalho
+//     const contact_name = messages[messages.length - 1]?.contact_name
+//     const header = document.getElementById("chatHeader")
+//     if (header) header.innerHTML = "Conversando com: " + (contact_name || normalized)
+
+//     renderChat(messages)
+//     renderConversations()
+
+//     saveState() // 🔥 salva o estado imediatamente
+// }
+
+/* =========================
+   OPEN CHAT AJUSTADO
+========================= */
 function openChat(number) {
 
     const normalized = normalizeNumber(number)
@@ -886,14 +957,14 @@ function openChat(number) {
     const messages = conversationsCache[normalized] || []
 
     if (messages.length) {
-        // Pega apenas a última mensagem recebida
+        // Atualiza o lastSeenTimestamp apenas com a última recebida
         const lastReceived = [...messages].reverse().find(m => m.direction === "received")
         if (lastReceived) {
             lastSeenTimestamp[normalized] = new Date(lastReceived.timestamp).getTime()
         }
     }
 
-    // Zera o contador de não lidos
+    // Zera contador de não lidos
     unreadCounter[normalized] = 0
 
     // Atualiza cabeçalho
@@ -903,8 +974,7 @@ function openChat(number) {
 
     renderChat(messages)
     renderConversations()
-
-    saveState() // 🔥 salva o estado imediatamente
+    saveState()
 }
 
 /* =========================
@@ -1055,8 +1125,104 @@ function removeMedia() {
 let isPolling = false
 let notifiedMessages = new Set()
 
+// async function pollingLoop() {
+//     // só roda se a página de mensagens estiver ativa e existir sessão
+//     if (!messagesPageActive || !currentSession) {
+//         setTimeout(pollingLoop, 4000)
+//         return
+//     }
+
+//     if (isPolling) {
+//         setTimeout(pollingLoop, 4000)
+//         return
+//     }
+
+//     isPolling = true
+//     let hasNewMessage = false
+
+//     try {
+//         // pega últimas 50 mensagens da API
+//         const res = await axios.get(`${CONFIG.API_URL}/${currentSession}?limit=50`)
+//         const messages = res.data?.data || []
+
+//         messages.forEach(m => {
+//             const number = getContactNumber(m)
+//             if (!number) return
+
+//             // garante que o cache exista
+//             if (!conversationsCache[number]) conversationsCache[number] = []
+//             // garante que _ids sempre exista
+//             conversationsCache[number]._ids = conversationsCache[number]._ids || new Set()
+
+//             // evita adicionar mensagem duplicada
+//             if (conversationsCache[number]._ids.has(m.id)) return
+
+//             // adiciona a mensagem e registra id
+//             conversationsCache[number]._ids.add(m.id)
+//             conversationsCache[number].push(m)
+//             hasNewMessage = true
+
+//             const lastSeen = lastSeenTimestamp[number] || 0
+//             const msgTime = new Date(m.timestamp).getTime()
+//             const isOpenChat = number === currentChatNumber
+
+//             // 🔔 notificação
+//             if (
+//                 m.direction === "received" &&
+//                 msgTime > lastSeen &&
+//                 !notifiedMessages.has(m.id)
+//             ) {
+//                 notifiedMessages.add(m.id)
+
+//                 const preview =
+//                     m.body && m.body !== '[Mídia recebida]' ? m.body : "📎 Mídia"
+
+//                 showNotification(preview, number)
+//                 saveState() // salva estado após notificação
+//             }
+
+//             // 🔢 contador de mensagens não lidas
+//             if (m.direction === "received" && msgTime > lastSeen) {
+//                 if (!isOpenChat) {
+//                     unreadCounter[number] = (unreadCounter[number] || 0) + 1
+//                 } else {
+//                     lastSeenTimestamp[number] = msgTime
+//                 }
+//                 saveState() // salva estado após contador
+//             }
+//         })
+
+//         // ordena mensagens por timestamp dentro de cada conversa
+//         if (hasNewMessage) {
+//             Object.keys(conversationsCache).forEach(number => {
+//                 conversationsCache[number].sort(
+//                     (a, b) => new Date(a.timestamp) - new Date(b.timestamp)
+//                 )
+//             })
+//         }
+
+//         // renderiza apenas se houver novidade
+//         if (hasNewMessage) {
+//             renderConversations()
+//             if (currentChatNumber && conversationsCache[currentChatNumber]) {
+//                 renderChat(conversationsCache[currentChatNumber])
+//             }
+//         }
+
+//     } catch (e) {
+//         console.error("Polling error", e)
+//     } finally {
+//         isPolling = false
+//         setTimeout(pollingLoop, 4000)
+//     }
+// }
+
+// inicia o loop
+/* =========================
+   POLLING LOOP AJUSTADO
+========================= */
+
 async function pollingLoop() {
-    // só roda se a página de mensagens estiver ativa e existir sessão
     if (!messagesPageActive || !currentSession) {
         setTimeout(pollingLoop, 4000)
         return
@@ -1071,7 +1237,6 @@ async function pollingLoop() {
     let hasNewMessage = false
 
     try {
-        // pega últimas 50 mensagens da API
         const res = await axios.get(`${CONFIG.API_URL}/${currentSession}?limit=50`)
         const messages = res.data?.data || []
 
@@ -1079,15 +1244,12 @@ async function pollingLoop() {
             const number = getContactNumber(m)
             if (!number) return
 
-            // garante que o cache exista
             if (!conversationsCache[number]) conversationsCache[number] = []
-            // garante que _ids sempre exista
-            conversationsCache[number]._ids = conversationsCache[number]._ids || new Set()
+            if (!conversationsCache[number]._ids) conversationsCache[number]._ids = new Set()
 
-            // evita adicionar mensagem duplicada
+            // Evita duplicadas
             if (conversationsCache[number]._ids.has(m.id)) return
 
-            // adiciona a mensagem e registra id
             conversationsCache[number]._ids.add(m.id)
             conversationsCache[number].push(m)
             hasNewMessage = true
@@ -1096,43 +1258,30 @@ async function pollingLoop() {
             const msgTime = new Date(m.timestamp).getTime()
             const isOpenChat = number === currentChatNumber
 
-            // 🔔 notificação
-            if (
-                m.direction === "received" &&
-                msgTime > lastSeen &&
-                !notifiedMessages.has(m.id)
-            ) {
+            // Notificação
+            if (m.direction === "received" && msgTime > lastSeen && !notifiedMessages.has(m.id)) {
                 notifiedMessages.add(m.id)
-
-                const preview =
-                    m.body && m.body !== '[Mídia recebida]' ? m.body : "📎 Mídia"
-
+                const preview = m.body && m.body !== '[Mídia recebida]' ? m.body : "📎 Mídia"
                 showNotification(preview, number)
-                saveState() // salva estado após notificação
+                saveState()
             }
 
-            // 🔢 contador de mensagens não lidas
+            // Contador não lidas
             if (m.direction === "received" && msgTime > lastSeen) {
                 if (!isOpenChat) {
                     unreadCounter[number] = (unreadCounter[number] || 0) + 1
                 } else {
                     lastSeenTimestamp[number] = msgTime
                 }
-                saveState() // salva estado após contador
+                saveState()
             }
         })
 
-        // ordena mensagens por timestamp dentro de cada conversa
         if (hasNewMessage) {
             Object.keys(conversationsCache).forEach(number => {
-                conversationsCache[number].sort(
-                    (a, b) => new Date(a.timestamp) - new Date(b.timestamp)
-                )
+                conversationsCache[number].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp))
             })
-        }
 
-        // renderiza apenas se houver novidade
-        if (hasNewMessage) {
             renderConversations()
             if (currentChatNumber && conversationsCache[currentChatNumber]) {
                 renderChat(conversationsCache[currentChatNumber])
@@ -1147,7 +1296,6 @@ async function pollingLoop() {
     }
 }
 
-// inicia o loop
 pollingLoop()
 
 /* =========================
