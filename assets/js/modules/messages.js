@@ -25,12 +25,12 @@ let audioUnlocked = false
 function showNotification(message, number) {
 
     // 🔔 Notificação do sistema
-    if ("Notification" in window && Notification.permission === "granted") {
-        new Notification("Nova mensagem", {
-            body: message,
-            icon: "./assets/images/logo.png" // 👈 já resolvemos o ícone aqui também
-        })
-    }
+    // if ("Notification" in window && Notification.permission === "granted") {
+    //     new Notification("Nova mensagem", {
+    //         body: message,
+    //         icon: "./assets/images/logo.png" // 👈 já resolvemos o ícone aqui também
+    //     })
+    // }
 
     // 🔊 SOM SEMPRE (independente da aba)
     playNotificationSound()

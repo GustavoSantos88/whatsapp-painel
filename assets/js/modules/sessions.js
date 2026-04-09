@@ -1,5 +1,3 @@
-// sessions.js
-
 if (!window.qrCache) window.qrCache = {};
 
 function setupSocketListeners() {
