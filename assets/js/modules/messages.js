@@ -1,6 +1,9 @@
 let currentSession = null
 let currentChatNumber = null
 
+let currentSessionId = null;
+let currentInstanceNumber = null;
+
 let conversationsCache = {}
 let unreadCounter = {}
 let selectedMedia = null
@@ -8,6 +11,11 @@ let sendingMessage = false
 let pollingInterval = null
 
 let messagesPageActive = false
+
+let contactsPage = 1
+let contactsLoading = false
+let contactsSearch = ""
+let contactsEnd = false
 
 
 /* =========================
@@ -29,7 +37,6 @@ function formatDay(date) {
         year: "numeric"
     })
 }
-
 
 /* =========================
    NORMALIZA NUMERO
@@ -57,7 +64,6 @@ function normalizeNumber(number) {
     return number
 }
 
-
 /* =========================
    MEDIA RENDER
 ========================= */
@@ -84,7 +90,6 @@ function renderMediaMessage(url, fileName) {
     return `<a href="${url}" target="_blank">📎 ${fileName}</a>`
 }
 
-
 /* =========================
    PREVIEW
 ========================= */
@@ -110,6 +115,369 @@ function removeSingleMedia(index) {
     preview.innerHTML = renderMediaPreview(selectedMedia)
 }
 
+function getLastMessagePreview(messages) {
+
+    if (!messages || !messages.length) return ""
+
+    for (let i = messages.length - 1; i >= 0; i--) {
+
+        const m = messages[i]
+
+        let texto = ""
+
+        // TEXTO
+        if (m.body && m.body !== '[Mídia recebida]') {
+            texto = m.body
+        }
+
+        // MÍDIA
+        else if (m.has_media) {
+
+            const ext = m.file_name?.split('.').pop()?.toLowerCase()
+
+            if (["jpg", "jpeg", "png", "webp"].includes(ext)) texto = "📷 Foto"
+            else if (["mp4", "webm"].includes(ext)) texto = "🎥 Vídeo"
+            else if (["mp3", "wav", "ogg"].includes(ext)) texto = "🎵 Áudio"
+            else if (ext === "pdf") texto = "📄 PDF"
+            else texto = "📎 Arquivo"
+        }
+
+        // 👉 AQUI entra o "Você:"
+        if (texto) {
+            return (m.direction === "sent" ? "Você: " : "") + texto
+        }
+    }
+
+    return ""
+}
+
+// Filtra contatos válidos (remove "Sem nome" e vazios)
+function isValidContact(c) {
+    if (!c.name) return false
+
+    const name = c.name.trim().toLowerCase()
+
+    if (name === "" || name === "sem nome") return false
+
+    return true
+}
+
+// Busca contatos via API (somente quando usuário dispara)
+async function fetchContacts(reset = false) {
+
+    if (!currentSessionId) {
+        console.warn("SessionId não definido")
+        return
+    }
+
+    if (!contactsSearch) return
+    if (contactsLoading || contactsEnd) return
+
+    contactsLoading = true
+
+    if (reset) {
+        contactsPage = 1
+        contactsEnd = false
+
+        const list = document.getElementById("contactsList")
+        if (list) {
+            list.innerHTML = "<div style='padding:10px'>Buscando...</div>"
+        }
+    }
+
+    try {
+
+        const res = await axios.get(
+            CONFIG.API_URL + `/contacts/${currentSessionId}`, {
+            params: {
+                search: contactsSearch,
+                page: contactsPage,
+                limit: 20
+            }
+        }
+        )
+
+        const data =
+            res.data.data ||
+            res.data.contacts ||
+            res.data.result ||
+            []
+
+        if (!data.length && contactsPage === 1) {
+            document.getElementById("contactsList").innerHTML =
+                "<div style='padding:10px'>Nenhum contato encontrado</div>"
+        }
+
+        // paginação correta
+        if (data.length < 20) {
+            contactsEnd = true
+        }
+
+        const validContacts = data.filter(isValidContact)
+
+        appendContacts(validContacts)
+
+        contactsPage++
+
+    } catch (err) {
+        console.error("Erro ao buscar contatos", err)
+
+        document.getElementById("contactsList").innerHTML =
+            "<div style='padding:10px;color:red;'>Erro ao carregar contatos</div>"
+    }
+
+    contactsLoading = false
+}
+
+// Adiciona contatos na lista (já filtrados)
+function appendContacts(contacts) {
+
+    const list = document.getElementById("contactsList")
+    list.innerHTML = "";
+
+    if (!contacts.length && contactsPage === 1) {
+        list.innerHTML = "<div style='padding:10px'>Nenhum contato válido encontrado</div>"
+        return
+    }
+
+    const html = contacts.map(c => {
+
+        const number = normalizeNumber(c.number)
+
+        return `
+            <div class="contact-item" onclick="selectContact('${number}', '${c.name}')">
+                <strong>${c.name}</strong><br>
+                <small>+${number}</small>
+            </div>
+        `
+    }).join("")
+
+    list.innerHTML += html
+}
+
+// Abre modal de contatos (não carrega nada automaticamente)
+function openContacts(event) {
+
+    if (event) event.stopPropagation() // 🔥 ESSENCIAL
+
+    if (!currentSessionId) {
+        alert("Selecione uma sessão primeiro")
+        return
+    }
+
+    const modal = document.getElementById("contactsModal")
+
+    if (modal.style.display === "flex") {
+        modal.style.display = "none"
+        return
+    }
+
+    modal.style.display = "flex"
+
+    modal.innerHTML = `
+        <div class="contacts-header">
+            <input id="searchContact" placeholder="Digite e pressione ENTER..." />
+        </div>
+        <div class="contacts-list" id="contactsList">
+            <div style="padding:10px;color:#666;">
+                Digite um nome para buscar contatos
+            </div>
+        </div>
+    `
+
+    const input = document.getElementById("searchContact")
+    const list = document.getElementById("contactsList")
+
+    // 🔥 impede fechar ao clicar dentro do modal
+    modal.addEventListener("click", (e) => e.stopPropagation())
+
+    input.addEventListener("input", (e) => {
+
+        const value = e.target.value.trim()
+
+        if (!value) {
+            contactsSearch = ""
+            contactsPage = 1
+            contactsEnd = false
+
+            list.innerHTML = `
+                <div style="padding:10px;color:#666;">
+                    Digite um nome para buscar contatos
+                </div>
+            `
+        }
+    })
+
+    input.addEventListener("keydown", (e) => {
+
+        if (e.key === "Escape") {
+            input.value = ""
+            modal.style.display = "none"
+            return
+        }
+
+        if (e.key === "Enter") {
+            triggerContactSearch()
+        }
+    })
+
+    input.addEventListener("blur", () => {
+        triggerContactSearch()
+    })
+}
+
+// Dispara busca manual (ENTER ou blur)
+function triggerContactSearch() {
+
+    const input = document.getElementById("searchContact")
+
+    if (!input) return
+
+    const value = input.value.trim()
+
+    if (!value) return
+
+    // opcional: mínimo 3 caracteres
+    if (value.length < 3) {
+        alert("Digite pelo menos 3 letras")
+        return
+    }
+
+    contactsSearch = value
+
+    fetchContacts(true)
+}
+
+// Seleciona contato e abre conversa
+function selectContact(number, name) {
+
+    const normalized = normalizeNumber(number)
+
+    if (!conversationsCache[normalized]) {
+        conversationsCache[normalized] = []
+    }
+
+    currentChatNumber = normalized
+
+    const header = document.getElementById("chatHeader")
+    if (header) header.innerHTML = "Conversando com: " + name
+
+    renderChat([])
+
+    renderConversations()
+
+    document.getElementById("contactsModal").style.display = "none"
+}
+
+/* =========================
+   EMOJIS (DINÂMICO)
+========================= */
+function getAllEmojis() {
+    const ranges = [
+        [0x1F600, 0x1F64F],
+        [0x1F300, 0x1F5FF],
+        [0x1F680, 0x1F6FF],
+        [0x2600, 0x26FF],
+        [0x2700, 0x27BF],
+        [0x1F900, 0x1F9FF],
+        [0x1FA70, 0x1FAFF],
+    ]
+
+    const list = []
+
+    ranges.forEach(([start, end]) => {
+        for (let i = start; i <= end; i++) {
+            try {
+                const emoji = String.fromCodePoint(i)
+                if (emoji && emoji !== "�") {
+                    list.push(emoji)
+                }
+            } catch (e) { }
+        }
+    })
+
+    return list
+}
+
+const emojis = getAllEmojis()
+let emojiRendered = false
+
+/* =========================
+   TOGGLE EMOJI
+========================= */
+function toggleEmojiPicker() {
+
+    const box = document.getElementById("emojiPicker")
+
+    if (!box) return
+
+    const isOpen = box.style.display === "block"
+
+    if (isOpen) {
+        box.style.display = "none"
+        return
+    }
+
+    box.style.display = "block"
+
+    // 🔥 renderiza apenas 1 vez
+    if (!emojiRendered) {
+        box.innerHTML = emojis.map(e =>
+            `<span onclick="addEmoji('${e}')">${e}</span>`
+        ).join("")
+
+        emojiRendered = true
+    }
+}
+
+/* =========================
+   ADICIONAR EMOJI
+========================= */
+function addEmoji(emoji) {
+
+    const input = document.getElementById("chatText")
+    if (!input) return
+
+    input.value += emoji
+    input.focus()
+}
+
+/* =========================
+   FECHAR AO CLICAR FORA
+========================= */
+document.addEventListener("click", (e) => {
+
+    const emojiBox = document.getElementById("emojiPicker")
+    const emojiBtn = document.getElementById("emojiBtn")
+
+    const contactsModal = document.getElementById("contactsModal")
+    const contactsBtn = document.getElementById("contactsBtn")
+
+    if (!emojiBox || !emojiBtn || !contactsModal) return
+
+    /* =========================
+       EMOJI
+    ========================= */
+    const clickedEmoji =
+        emojiBox.contains(e.target) ||
+        emojiBtn.contains(e.target)
+
+    if (!clickedEmoji) {
+        emojiBox.style.display = "none"
+    }
+
+    /* =========================
+       CONTATOS
+    ========================= */
+    const clickedContacts =
+        contactsModal.contains(e.target) ||
+        (contactsBtn && contactsBtn.contains(e.target))
+
+    if (!clickedContacts) {
+        contactsModal.style.display = "none"
+    }
+
+})
 
 /* =========================
    PAGE (LAYOUT CORRIGIDO)
@@ -119,15 +487,16 @@ function messagesPage() {
     setTimeout(initMessagesPage, 50)
 
     return `
-    <h1>Mensagem</h1>
-    
     <div class="chat-layout">
         <!-- Barra Lateral de Conversas -->
         <div class="chat-conversations">
-            <select id="msgSession" style="padding:15px; border:none; border-bottom:1px solid var(--border-color); background:var(--bg-card); font-weight:bold;"></select>
-            <div class="chat-search" style="padding:10px; border-bottom:1px solid var(--border-color);">
-                <input id="searchChat" placeholder="🔍 Buscar conversa..." style="width:100%; padding:10px; border-radius:8px; border:1px solid var(--border-color); background:var(--input-bg); color:var(--text-main);">
+            <select id="msgSession" style="padding:15px; border:none; border-bottom:1px solid var(--border-color); background:var(--bg-card); font-weight:bold;"></select>            
+            <div class="chat-search" style="display:flex; gap:5px;">
+                <input class="" id="searchChat" placeholder="🔍 Buscar conversa..." style="flex:1; padding:5px;">                
+                <button class="primary-btn" style="margin:0; padding:10px;" id="contactsBtn" onclick="openContacts(event)">👤</button>
             </div>
+            <div id="contactsModal" class="contacts-modal"></div>
+
             <div id="conversationsList">
                 <div class="center" style="padding:20px; font-size:13px; color:var(--text-muted);">Carregando conversas...</div>
             </div>
@@ -141,37 +510,19 @@ function messagesPage() {
             <div id="chatMessages">
                 <div class="center" style="color:var(--text-muted);">Nenhuma conversa selecionada</div>
             </div>
-            <div id="mediaPreview"></div>
+            <div id="mediaPreview"></div>             
             <div class="chat-input" style="padding:15px; background:var(--bg-card); border-top:1px solid var(--border-color); display:flex; gap:10px; align-items:center;">
-                <input type="file" id="chatFile" multiple style="display:none">
+                <input type="file" id="chatFile" multiple style="display:none">                
                 <button class="primary-btn" style="margin:0; padding:10px;" onclick="document.getElementById('chatFile').click()">📎</button>
+
+                <button  id="emojiBtn" class="primary-btn" style="margin:0; padding:10px;" onclick="toggleEmojiPicker()">😊</button>
+                <div id="emojiPicker" class="emoji-box"></div>
+
                 <input id="chatText" placeholder="Escreva uma mensagem..." style="flex:1; padding:12px; border-radius:8px; border:1px solid var(--border-color); background:var(--input-bg); color:var(--text-main);">
                 <button class="primary-btn" style="margin:0; padding:10px 20px;" onclick="sendChatMessage()">Enviar</button>
             </div>
         </div>
     </div>`
-}
-
-/* =========================
-   SELECIONAR CHAT (NOVA FUNÇÃO ESSENCIAL)
-========================= */
-function selectChat(number) {
-    currentChatNumber = number
-    document.getElementById("chatHeader").innerText = "Conversando com: " + number
-
-    // Atualiza a classe 'active' na lista lateral
-    renderConversations()
-
-    // Renderiza as mensagens desse contato
-    if (typeof renderMessages === "function") {
-        renderMessages()
-    }
-
-    // Scroll para o final
-    const msgDiv = document.getElementById("chatMessages")
-    if (msgDiv) {
-        setTimeout(() => msgDiv.scrollTop = msgDiv.scrollHeight, 100)
-    }
 }
 
 /* =========================
@@ -185,11 +536,9 @@ function destroyMessagesPage() {
     }
 }
 
-
 /* =========================
    INIT
 ========================= */
-
 async function initMessagesPage() {
 
     if (!document.getElementById("msgSession")) return
@@ -223,66 +572,105 @@ async function initMessagesPage() {
 
 }
 
-
 /* =========================
    SESSOES
 ========================= */
-
 async function loadMessageSessions() {
 
     const select = document.getElementById("msgSession")
     if (!select) return
 
     const res = await axios.get(CONFIG.API_URL + "/sessions")
-    console.log(res.data.data)
+
     select.innerHTML = res.data.data.map(s =>
-        `<option value="${s.session_id}">${s.session_id}</option>`
+        `<option value="${s.session_id}" data-phone="${s.phone_number}">
+            ${s.profile_name ? s.profile_name : '+' + s.phone_number}
+        </option>`
     ).join("")
 
-    select.addEventListener("change", loadConversations)
+    // define inicial
+    const firstOption = select.options[select.selectedIndex]
+
+    currentSessionId = select.value
+    currentInstanceNumber = firstOption.dataset.phone
+
+    select.addEventListener("change", (e) => {
+
+        const selectedOption = e.target.options[e.target.selectedIndex]
+
+        currentSessionId = e.target.value
+        currentInstanceNumber = selectedOption.dataset.phone
+
+        loadConversations()
+    })
 
     loadConversations()
-
 }
-
 
 /* =========================
    LOAD CONVERSAS
 ========================= */
+// async function loadConversations() {
+
+//     const select = document.getElementById("msgSession")
+
+//     if (!select) return
+//     if (!select.value) return
+
+//     const sessionId = select.value
+
+//     currentSession = sessionId
+
+//     const res = await axios.get(CONFIG.API_URL + "/" + sessionId + "?limit=200")
+
+//     const messages = res.data.data
+
+//     const grouped = {}
+
+//     messages.forEach(m => {
+
+//         const number = getContactNumber(m)
+
+//         if (!grouped[number]) grouped[number] = []
+
+//         grouped[number].push(m)
+
+//     })
+
+//     conversationsCache = grouped
+
+//     renderConversations()
+
+// }
 
 async function loadConversations() {
 
     const select = document.getElementById("msgSession")
-
-    if (!select) return
-    if (!select.value) return
+    if (!select || !select.value) return
 
     const sessionId = select.value
-
     currentSession = sessionId
 
-
-
     const res = await axios.get(CONFIG.API_URL + "/" + sessionId + "?limit=200")
-
     const messages = res.data.data
 
     const grouped = {}
 
     messages.forEach(m => {
-
         const number = getContactNumber(m)
-
         if (!grouped[number]) grouped[number] = []
-
         grouped[number].push(m)
+    })
 
+    // ✅ Ordenar cada grupo por timestamp crescente
+    Object.keys(grouped).forEach(number => {
+        grouped[number].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp))
     })
 
     conversationsCache = grouped
 
+    // ✅ Renderizar a lista já com a última mensagem correta
     renderConversations()
-
 }
 
 function getContactNumber(m) {
@@ -302,11 +690,9 @@ function getContactNumber(m) {
     return to
 }
 
-
 /* =========================
    RENDER LISTA
 ========================= */
-
 function renderConversations() {
 
     const container = document.getElementById("conversationsList")
@@ -331,67 +717,59 @@ function renderConversations() {
         .filter(n => n.includes(search))
         .map(n => {
 
-            const last = conversationsCache[n].slice(-1)[0]
-
+            const messages = conversationsCache[n]
+            const last = messages[messages.length - 1]
+            const preview = getLastMessagePreview(messages)
             const unread = unreadCounter[n] || 0
 
             return `
+                <div class="chat-conversation" onclick="openChat('${n}')">
 
-<div class="chat-conversation" onclick="openChat('${n}')">
+                    <div class="conv-info">
+                        <strong>${last.contact_name ? last.contact_name : `+${n}`}</strong>
 
-<div class="conv-info">
+                        <div class="conv-last">
+                            ${preview}
+                        </div>
+                    </div>
 
-<strong>${n}</strong>
+                    <div style="display:flex;flex-direction:column;align-items:flex-end">
 
-<div class="conv-last">
-${last?.body || "📎 mídia"}
-</div>
+                        <div class="conv-time">
+                            ${formatTime(last?.timestamp)}
+                        </div>
 
-</div>
+                        ${unread > 0 ? `<span class="chat-unread">${unread}</span>` : ""}
 
-<div style="display:flex;flex-direction:column;align-items:flex-end">
+                    </div>
 
-<div class="conv-time">
-${formatTime(last?.timestamp)}
-</div>
-
-${unread > 0 ? `<span class="chat-unread">${unread}</span>` : ""}
-
-</div>
-
-</div>
-
-`
-
+                </div>
+            `
         }).join("")
-
 }
-
 
 /* =========================
    OPEN CHAT
 ========================= */
-
 function openChat(number) {
 
     currentChatNumber = normalizeNumber(number)
 
     unreadCounter[number] = 0
 
+    const contact_name = conversationsCache[number][0]?.contact_name
+
     const header = document.getElementById("chatHeader")
-    if (header) header.innerHTML = number
+    if (header) header.innerHTML = "Conversando com: " + contact_name || number
 
     renderChat(conversationsCache[number] || [])
 
     renderConversations()
-
 }
-
 
 /* =========================
    RENDER CHAT
 ========================= */
-
 function renderChat(messages) {
 
     const container = document.getElementById("chatMessages")
@@ -403,16 +781,38 @@ function renderChat(messages) {
 
     container.innerHTML = messages.map(m => {
 
-        const day = formatDay(m.timestamp)
+        const messageDate = new Date(m.timestamp)
+        const today = new Date()
+
+        // Zerar horas para comparação correta
+        const normalize = (date) => {
+            const d = new Date(date)
+            d.setHours(0, 0, 0, 0)
+            return d
+        }
+
+        const diffTime = normalize(today) - normalize(messageDate)
+        const diffDays = diffTime / (1000 * 60 * 60 * 24)
+
+        let dayLabel = ""
+
+        if (diffDays === 0) {
+            dayLabel = "Hoje"
+        } else if (diffDays === 1) {
+            dayLabel = "Ontem"
+        } else {
+            dayLabel = formatDay(m.timestamp) // ex: 12/03/2026
+        }
 
         let daySeparator = ""
 
-        if (day !== lastDay) {
-            daySeparator = `<div class="msg-day">${day}</div>`
-            lastDay = day
+        if (dayLabel !== lastDay) {
+            daySeparator = `<div class="msg-day"> ${dayLabel}</div>`;
+            lastDay = dayLabel
         }
 
         const type = m.direction === "sent" ? "chat-sent" : "chat-received"
+
 
         let media = ""
 
@@ -430,7 +830,7 @@ function renderChat(messages) {
 
                 if (m.media_path) {
                     let path = m.media_path.replace(/^\/+/, "")
-                    url = CONFIG.SOCKET_URL + `/uploads/${m.session_id}/` + path
+                    url = CONFIG.SOCKET_URL + `/ uploads / ${m.session_id} / ` + path
                     fileName = path.split('/').pop()
                 }
             }
@@ -440,30 +840,25 @@ function renderChat(messages) {
         }
 
         return `
-
-${daySeparator}
-
-<div class="chat-message ${type}">
-
-<div class="chat-bubble">
-
-${media}
-
-${m.body || ""}
-
-</div>
-
-<div class="msg-meta">
-
-<span>${formatTime(m.timestamp)}</span>
-
-<span>${m.status || ""}</span>
-
-</div>
-
-</div>
-
-`
+            ${m.body && m.body !== '[Mídia recebida]' ? `
+                <div style="text-align: center;">
+                    ${daySeparator}
+                </div>
+                <div class="chat-message ${type}">
+                    <div class="chat-bubble">        
+                        <!-- <div>${m.contact_name ? m.contact_name + ` +${m.from}` : `+${m.from}`}</div> 
+                        <div class="line"></div> -->
+                        ${media}
+                        ${(m.body || "").replace(/\n/g, "<br>")}
+                        <div class="msg-meta" style="text-align: right;">
+                            <span>${formatTime(m.timestamp)}</span>
+                            <span>${m.status || ""}</span>
+                        </div>
+                    </div>
+                </div>
+            ` : ''
+            }
+            `
 
     }).join("")
 
@@ -474,7 +869,6 @@ ${m.body || ""}
 /* =========================
    FILE
 ========================= */
-
 function handleFile(e) {
 
     selectedMedia = Array.from(e.target.files)
@@ -505,7 +899,6 @@ function removeMedia() {
 /* =========================
    POLLING
 ========================= */
-
 function startPolling() {
 
     if (pollingInterval) clearInterval(pollingInterval)
@@ -554,7 +947,6 @@ function startPolling() {
 /* =========================
    ENVIAR MENSAGEM
 ========================= */
-
 async function sendChatMessage() {
 
     if (sendingMessage) return

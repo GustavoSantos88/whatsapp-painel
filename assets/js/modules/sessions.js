@@ -83,8 +83,9 @@ function renderSessionCard(session) {
         <div class="card session-card" id="session_${session.session_id}">
             <div class="session-header">
                 <div style="display: flex; flex-direction: column;">
-                    <span style="font-weight: 700; color: #111827;">WhatsApp Web</span>
-                    <small style="color: #6b7280;">ID: ${session.session_id.substring(0, 8)}</small>
+                    <span id="msgSession" style="font-weight: 700;padding:5px; border:none; border-bottom:1px solid var(--border-color); background:var(--bg-card); font-weight:bold;">WhatsApp Web</span>
+                    
+                    <small id="msgSession" style="font-weight: 700;padding:5px; background:var(--bg-card); font-weight:bold;">${session.profile_name ? session.profile_name : '+' + session.phone_number}</small>
                 </div>
                 <span class="status ${statusClass}">${session.status}</span>
             </div>

@@ -60,7 +60,7 @@ async function loadWebhookSessions() {
 
         // Popula o select
         select.innerHTML = sessions.map(s =>
-            `<option value="${s.session_id}">${s.session_id}</option>`
+            `<option value="${s.session_id}">${s.profile_name ? s.profile_name : '+' + s.phone_number}</option>`
         ).join("");
 
         // REGRA SOLICITADA: 

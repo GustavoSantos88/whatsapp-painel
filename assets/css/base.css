@@ -11,6 +11,7 @@
     --input-bg: #ffffff;
     --accent: #6366f1;
     --accent-hover: #4f46e5;
+    --line-color: rgba(0, 0, 0, 0.1);
 }
 
 .dark {
@@ -20,6 +21,7 @@
     --text-muted: #9ca3af;
     --border-color: #334155;
     --input-bg: #334155;
+    --line-color: rgba(255, 255, 255, 0.2);
 }
 
 /* ==============================
@@ -335,6 +337,11 @@ body {
     /* Scroll apenas nos nomes */
 }
 
+.conv-info,
+.conv-time {
+    font-size: 12px;
+}
+
 .chat-conversation {
     padding: 15px;
     border-bottom: 1px solid var(--border-color);
@@ -351,6 +358,11 @@ body {
     background: var(--accent) !important;
     color: white !important;
 }
+
+#msgSession {
+    color: var(--text-main);
+}
+
 
 .chat-messages {
     flex: 1;
@@ -376,25 +388,44 @@ body {
     gap: 10px;
 }
 
+.chat-message {
+    display: flex;
+    width: 100%;
+}
+
+
 .chat-bubble {
     padding: 10px;
     border-radius: 8px;
     background: var(--bg-card);
     color: var(--text-main);
-    font-size: 14px;
+    font-size: 12px;
     border: 1px solid var(--border-color);
-    align-self: flex-start;
-    max-width: 80%;
+    min-width: 12%;
+    max-width: 60%;
+}
+
+.chat-sent {
+    justify-content: flex-end;
+}
+
+.chat-received {
+    justify-content: flex-start;
 }
 
 .chat-sent .chat-bubble {
     background: #059669;
     color: white;
     border: none;
-    align-self: flex-end;
+}
+
+.chat-received .chat-bubble {
+    background: var(--bg-card);
+    color: var(--text-main);
 }
 
 .chat-input {
+    position: relative;
     border-top: 1px solid var(--border-color);
     padding: 15px;
     display: flex;
@@ -409,6 +440,116 @@ body {
     border: 1px solid var(--border-color);
     background: var(--input-bg);
     color: var(--text-main);
+}
+
+.line {
+    border-top: 1px solid var(--line-color);
+    margin-bottom: 10px;
+}
+
+@media (prefers-color-scheme: dark) {
+    .line {
+        border-top: 1px solid var(--line-color);
+    }
+}
+
+/* botão emoji */
+.emoji-box {
+    position: absolute;
+
+    bottom: 80px;
+    /* acima do input */
+    left: 14px;
+    /* alinhado ao botão */
+
+    width: 270px;
+    height: 300px;
+
+    background: var(--bg-card);
+    color: var(--text-main);
+
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+
+    overflow-y: auto;
+    display: none;
+    padding: 10px;
+
+    z-index: 999;
+}
+
+/* emojis */
+.emoji-box span {
+    cursor: pointer;
+    font-size: 20px;
+    padding: 5px;
+    display: inline-block;
+}
+
+/* hover */
+.emoji-box span:hover {
+    background: var(--input-bg);
+    border-radius: 5px;
+}
+
+/* Modal principal */
+.contacts-modal {
+    position: fixed;
+    top: 28%;
+    left: 42%;
+    transform: translate(-50%, -50%);
+
+    width: 290px;
+    height: 300px;
+    max-width: 400px;
+
+    display: none;
+    flex-direction: column;
+
+    background: var(--bg-card);
+    color: var(--text-main);
+
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+
+    z-index: 9999;
+}
+
+/* Header */
+.contacts-header {
+    padding: 10px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+/* Input */
+.contacts-header input {
+    width: 90%;
+    padding: 8px;
+
+    background: var(--input-bg);
+    color: var(--text-main);
+
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+}
+
+/* Lista */
+.contacts-list {
+    flex: 1;
+    overflow-y: auto;
+}
+
+/* Item */
+.contact-item {
+    padding: 10px;
+    cursor: pointer;
+    color: var(--text-main);
+    border-bottom: 1px solid var(--border-color);
+}
+
+/* Hover */
+.contact-item:hover {
+    background: var(--input-bg);
 }
 
 /* ==============================

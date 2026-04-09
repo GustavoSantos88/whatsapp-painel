@@ -11,7 +11,7 @@ function changePasswordPage() {
 
         <div class="admin-page">          
 
-            <div class="change-password-card card" style="max-width: 400px;  display: flex; flex-direction: column; gap: 10px;">
+            <div class="change-password-card card" style="max-width: 400px; display: flex; flex-direction: column; gap: 10px;">
                 
                 <input type="${role === 'user' ? `password` : 'hidden'}" id="oldPassword" placeholder="Senha atual" class="input-field" required>
                  
