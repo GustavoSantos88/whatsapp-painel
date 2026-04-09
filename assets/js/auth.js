@@ -74,16 +74,29 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 })
 
-// Captura o evento de Enter
-document.addEventListener("keydown", function (event) {
-    if (event.key === "Enter") {
-        validarCampos();
+// Captura o evento de Enter apenas se estivermos na página de login
+document.addEventListener("DOMContentLoaded", function () {
+    const email = document.getElementById("email");
+    const senha = document.getElementById("password");
+
+    if (email && senha) {
+        document.addEventListener("keydown", function (event) {
+            if (event.key === "Enter") {
+                validarCampos();
+            }
+        });
     }
 });
 
 function validarCampos() {
     const email = document.getElementById("email");
     const senha = document.getElementById("password");
+
+    // Só continua se os elementos existirem
+    if (!email || !senha) {
+        // Não está na página de login, ignora
+        return;
+    }
 
     // Verifica se o email está preenchido e válido
     if (!email.value) {

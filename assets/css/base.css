@@ -316,6 +316,11 @@ body {
     background: var(--bg-card);
 }
 
+.has-unread {
+    background: rgba(37, 99, 235, 0.08);
+    border-left: 3px solid #2563eb;
+}
+
 .chat-search {
     padding: 12px;
     border-bottom: 1px solid var(--border-color);

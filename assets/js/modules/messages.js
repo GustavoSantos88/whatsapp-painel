@@ -1,3 +1,6 @@
+const notificationSound = new Audio("https://notificationsounds.com/storage/sounds/file-sounds-1150-pristine.mp3")
+
+let lastSeenTimestamp = {}
 let currentSession = null
 let currentChatNumber = null
 
@@ -17,6 +20,34 @@ let contactsLoading = false
 let contactsSearch = ""
 let contactsEnd = false
 
+let audioUnlocked = false
+
+function showNotification(message, number) {
+
+    // 🔔 Notificação do sistema
+    if ("Notification" in window && Notification.permission === "granted") {
+        new Notification("Nova mensagem", {
+            body: message,
+            icon: "./assets/images/logo.png" // 👈 já resolvemos o ícone aqui também
+        })
+    }
+
+    // 🔊 SOM SEMPRE (independente da aba)
+    playNotificationSound()
+}
+
+function playNotificationSound() {
+
+    notificationSound.currentTime = 0
+
+    const playPromise = notificationSound.play()
+
+    if (playPromise !== undefined) {
+        playPromise.catch(() => {
+            console.warn("🔇 Som bloqueado pelo navegador")
+        })
+    }
+}
 
 /* =========================
    FORMATAR DATA
@@ -43,11 +74,14 @@ function formatDay(date) {
 ========================= */
 function normalizeNumber(number) {
     if (!number) return null
+
     number = number
         .replace('@c.us', '')
         .replace('@s.whatsapp.net', '')
         .replace('@lid', '')
         .replace(/\D/g, '')
+
+    if (number.length < 10) return null // 🔥 evita lixo
 
     if (!number.startsWith("55")) {
         number = "55" + number
@@ -60,8 +94,7 @@ function normalizeNumber(number) {
         phone = "9" + phone
     }
 
-    number = "55" + ddd + phone
-    return number
+    return "55" + ddd + phone
 }
 
 /* =========================
@@ -95,23 +128,38 @@ function renderMediaMessage(url, fileName) {
 ========================= */
 function renderMediaPreview(files) {
     return files.map((file, index) => {
-        const url = URL.createObjectURL(file)
+
+        if (!file._previewUrl) {
+            file._previewUrl = URL.createObjectURL(file)
+        }
+
         return `
             <div style="position:relative; display:inline-block; margin:5px;">
-                <span onclick="removeSingleMedia(${index})" style="position:absolute; top:-6px; right:-6px; background:#ff4d4f; color:#fff; width:18px; height:18px; border-radius:50%; font-size:12px; display:flex; align-items:center; justify-content:center; cursor:pointer; z-index:10;">×</span>
-                ${renderMediaMessage(url, file.name)}
+                <span onclick="removeSingleMedia(${index})"
+                    style="position:absolute; top:-6px; right:-6px; background:#ff4d4f; color:#fff; width:18px; height:18px; border-radius:50%; font-size:12px; display:flex; align-items:center; justify-content:center; cursor:pointer; z-index:10;">×</span>
+                ${renderMediaMessage(file._previewUrl, file.name)}
             </div>`
     }).join("")
 }
 
 function removeSingleMedia(index) {
     if (!selectedMedia) return
+
+    const file = selectedMedia[index]
+
+    if (file?._previewUrl) {
+        URL.revokeObjectURL(file._previewUrl)
+    }
+
     selectedMedia.splice(index, 1)
+
     const preview = document.getElementById("mediaPreview")
+
     if (!selectedMedia.length) {
         removeMedia()
         return
     }
+
     preview.innerHTML = renderMediaPreview(selectedMedia)
 }
 
@@ -233,7 +281,9 @@ async function fetchContacts(reset = false) {
 function appendContacts(contacts) {
 
     const list = document.getElementById("contactsList")
-    list.innerHTML = "";
+    if (contactsPage === 1) {
+        list.innerHTML = ""
+    }
 
     if (!contacts.length && contactsPage === 1) {
         list.innerHTML = "<div style='padding:10px'>Nenhum contato válido encontrado</div>"
@@ -317,7 +367,7 @@ function openContacts(event) {
         }
 
         if (e.key === "Enter") {
-            triggerContactSearch()
+            triggerContactSearch();
         }
     })
 
@@ -364,6 +414,8 @@ function selectContact(number, name) {
 
     renderChat([])
 
+    openChat(number)
+
     renderConversations()
 
     document.getElementById("contactsModal").style.display = "none"
@@ -389,7 +441,7 @@ function getAllEmojis() {
         for (let i = start; i <= end; i++) {
             try {
                 const emoji = String.fromCodePoint(i)
-                if (emoji && emoji !== "�") {
+                if (emoji && emoji !== "�" && emoji !== "🫺") {
                     list.push(emoji)
                 }
             } catch (e) { }
@@ -453,30 +505,40 @@ document.addEventListener("click", (e) => {
     const contactsModal = document.getElementById("contactsModal")
     const contactsBtn = document.getElementById("contactsBtn")
 
-    if (!emojiBox || !emojiBtn || !contactsModal) return
+    /* EMOJI */
+    if (emojiBox && emojiBtn) {
+        const clickedEmoji =
+            emojiBox.contains(e.target) ||
+            emojiBtn.contains(e.target)
 
-    /* =========================
-       EMOJI
-    ========================= */
-    const clickedEmoji =
-        emojiBox.contains(e.target) ||
-        emojiBtn.contains(e.target)
-
-    if (!clickedEmoji) {
-        emojiBox.style.display = "none"
+        if (!clickedEmoji) {
+            emojiBox.style.display = "none"
+        }
     }
 
-    /* =========================
-       CONTATOS
-    ========================= */
-    const clickedContacts =
-        contactsModal.contains(e.target) ||
-        (contactsBtn && contactsBtn.contains(e.target))
+    /* CONTATOS */
+    if (contactsModal) {
+        const clickedContacts =
+            contactsModal.contains(e.target) ||
+            (contactsBtn && contactsBtn.contains(e.target))
 
-    if (!clickedContacts) {
-        contactsModal.style.display = "none"
+        if (!clickedContacts) {
+            contactsModal.style.display = "none"
+        }
     }
 
+    if (audioUnlocked) return
+
+    notificationSound.play()
+        .then(() => {
+            notificationSound.pause()
+            notificationSound.currentTime = 0
+            audioUnlocked = true
+            console.log("🔊 Áudio liberado")
+        })
+        .catch(() => {
+            console.warn("🔇 Ainda bloqueado")
+        })
 })
 
 /* =========================
@@ -490,7 +552,7 @@ function messagesPage() {
     <div class="chat-layout">
         <!-- Barra Lateral de Conversas -->
         <div class="chat-conversations">
-            <select id="msgSession" style="padding:15px; border:none; border-bottom:1px solid var(--border-color); background:var(--bg-card); font-weight:bold;"></select>            
+            <select id="msgSession" style="padding:19px; border:none; border-bottom:1px solid var(--border-color); background:var(--bg-card); font-weight:bold;"></select>            
             <div class="chat-search" style="display:flex; gap:5px;">
                 <input class="" id="searchChat" placeholder="🔍 Buscar conversa..." style="flex:1; padding:5px;">                
                 <button class="primary-btn" style="margin:0; padding:10px;" id="contactsBtn" onclick="openContacts(event)">👤</button>
@@ -534,6 +596,7 @@ function destroyMessagesPage() {
         clearInterval(pollingInterval)
         pollingInterval = null
     }
+    window._pollingStarted = false
 }
 
 /* =========================
@@ -541,7 +604,27 @@ function destroyMessagesPage() {
 ========================= */
 async function initMessagesPage() {
 
+    loadState()  // 🔥 Carrega estado salvo
+
     if (!document.getElementById("msgSession")) return
+
+    // 🔔 pedir permissão
+    if ("Notification" in window) {
+
+        if (Notification.permission === "default") {
+            await Notification.requestPermission()
+        }
+
+        if (Notification.permission === "denied") {
+            console.warn("🚫 Notificações bloqueadas pelo navegador")
+
+            // opcional: avisar usuário
+            setTimeout(() => {
+                alert("Ative as notificações no navegador para receber alertas de mensagens.")
+            }, 2000)
+        }
+
+    }
 
     await loadMessageSessions()
 
@@ -565,11 +648,21 @@ async function initMessagesPage() {
     }
 
     if (searchChat) {
-        searchChat.addEventListener("input", renderConversations)
+        let searchTimeout = null
+
+        searchChat.addEventListener("input", () => {
+            clearTimeout(searchTimeout)
+
+            searchTimeout = setTimeout(() => {
+                renderConversations()
+            }, 200)
+        })
     }
 
-    startPolling()
-
+    if (!window._pollingStarted) {
+        window._pollingStarted = true
+        pollingLoop()
+    }
 }
 
 /* =========================
@@ -610,39 +703,6 @@ async function loadMessageSessions() {
 /* =========================
    LOAD CONVERSAS
 ========================= */
-// async function loadConversations() {
-
-//     const select = document.getElementById("msgSession")
-
-//     if (!select) return
-//     if (!select.value) return
-
-//     const sessionId = select.value
-
-//     currentSession = sessionId
-
-//     const res = await axios.get(CONFIG.API_URL + "/" + sessionId + "?limit=200")
-
-//     const messages = res.data.data
-
-//     const grouped = {}
-
-//     messages.forEach(m => {
-
-//         const number = getContactNumber(m)
-
-//         if (!grouped[number]) grouped[number] = []
-
-//         grouped[number].push(m)
-
-//     })
-
-//     conversationsCache = grouped
-
-//     renderConversations()
-
-// }
-
 async function loadConversations() {
 
     const select = document.getElementById("msgSession")
@@ -658,16 +718,33 @@ async function loadConversations() {
 
     messages.forEach(m => {
         const number = getContactNumber(m)
+        if (!number) return
         if (!grouped[number]) grouped[number] = []
         grouped[number].push(m)
     })
 
     // ✅ Ordenar cada grupo por timestamp crescente
     Object.keys(grouped).forEach(number => {
-        grouped[number].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp))
-    })
 
-    conversationsCache = grouped
+        if (!conversationsCache[number]) {
+            conversationsCache[number] = []
+        }
+
+        grouped[number].forEach(m => {
+
+            const exists = conversationsCache[number].find(x => x.id === m.id)
+
+            if (!exists) {
+                conversationsCache[number].push(m)
+                conversationsCache[number].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp))
+            }
+
+        })
+
+        // 🔥 ordena SEMPRE
+        conversationsCache[number].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp))
+
+    })
 
     // ✅ Renderizar a lista já com a última mensagem correta
     renderConversations()
@@ -690,6 +767,19 @@ function getContactNumber(m) {
     return to
 }
 
+function saveState() {
+    localStorage.setItem("lastSeenTimestamp", JSON.stringify(lastSeenTimestamp))
+    localStorage.setItem("notifiedMessages", JSON.stringify([...notifiedMessages]))
+}
+
+function loadState() {
+    const lastSeen = localStorage.getItem("lastSeenTimestamp")
+    const notified = localStorage.getItem("notifiedMessages")
+
+    if (lastSeen) lastSeenTimestamp = JSON.parse(lastSeen)
+    if (notified) notifiedMessages = new Set(JSON.parse(notified))
+}
+
 /* =========================
    RENDER LISTA
 ========================= */
@@ -700,43 +790,69 @@ function renderConversations() {
 
     if (!container || !searchInput) return
 
-    const search = searchInput.value.toLowerCase()
+    const search = searchInput.value.toLowerCase().trim()
 
     const numbers = Object.keys(conversationsCache)
 
+    // 🔥 Ordena por última mensagem (mais recente primeiro)
     numbers.sort((a, b) => {
 
-        const lastA = conversationsCache[a].slice(-1)[0]
-        const lastB = conversationsCache[b].slice(-1)[0]
+        const lastA = conversationsCache[a]?.slice(-1)[0]
+        const lastB = conversationsCache[b]?.slice(-1)[0]
+
+        if (!lastA && !lastB) return 0
+        if (!lastA) return 1
+        if (!lastB) return -1
 
         return new Date(lastB.timestamp) - new Date(lastA.timestamp)
-
     })
 
     container.innerHTML = numbers
-        .filter(n => n.includes(search))
+
+        // 🔥 filtro robusto (nome + número + validação)
+        .filter(n => {
+
+            const messages = conversationsCache[n]
+
+            if (!messages || !messages.length) return false
+
+            const contactName = (messages[messages.length - 1]?.contact_name || "").toLowerCase()
+
+            return (
+                !search ||
+                n.includes(search) ||
+                contactName.includes(search)
+            )
+        })
+
         .map(n => {
 
             const messages = conversationsCache[n]
+            if (!messages || !messages.length) return ""
+
             const last = messages[messages.length - 1]
+            if (!last) return ""
+
             const preview = getLastMessagePreview(messages)
             const unread = unreadCounter[n] || 0
 
+            const contactName = last.contact_name?.trim() || `+${n}`
+
             return `
-                <div class="chat-conversation" onclick="openChat('${n}')">
+                <div class="chat-conversation ${unread > 0 ? 'has-unread' : ''}" onclick="openChat('${n}')">
 
                     <div class="conv-info">
-                        <strong>${last.contact_name ? last.contact_name : `+${n}`}</strong>
+                        <strong>${contactName}</strong>
 
                         <div class="conv-last">
-                            ${preview}
+                            ${preview || ""}
                         </div>
                     </div>
 
                     <div style="display:flex;flex-direction:column;align-items:flex-end">
 
                         <div class="conv-time">
-                            ${formatTime(last?.timestamp)}
+                            ${last.timestamp ? formatTime(last.timestamp) : ""}
                         </div>
 
                         ${unread > 0 ? `<span class="chat-unread">${unread}</span>` : ""}
@@ -745,7 +861,16 @@ function renderConversations() {
 
                 </div>
             `
-        }).join("")
+        })
+        .join("")
+
+    // 🔥 Garantir que o scroll vá para o final depois da renderização
+    const chatMessages = document.getElementById("chatMessages") // container das mensagens
+    if (chatMessages) {
+        requestAnimationFrame(() => {
+            chatMessages.scrollTop = chatMessages.scrollHeight
+        })
+    }
 }
 
 /* =========================
@@ -753,18 +878,31 @@ function renderConversations() {
 ========================= */
 function openChat(number) {
 
-    currentChatNumber = normalizeNumber(number)
+    const normalized = normalizeNumber(number)
+    currentChatNumber = normalized
 
-    unreadCounter[number] = 0
+    const messages = conversationsCache[normalized] || []
 
-    const contact_name = conversationsCache[number][0]?.contact_name
+    if (messages.length) {
+        // Pega apenas a última mensagem recebida
+        const lastReceived = [...messages].reverse().find(m => m.direction === "received")
+        if (lastReceived) {
+            lastSeenTimestamp[normalized] = new Date(lastReceived.timestamp).getTime()
+        }
+    }
 
+    // Zera o contador de não lidos
+    unreadCounter[normalized] = 0
+
+    // Atualiza cabeçalho
+    const contact_name = messages[messages.length - 1]?.contact_name
     const header = document.getElementById("chatHeader")
-    if (header) header.innerHTML = "Conversando com: " + contact_name || number
+    if (header) header.innerHTML = "Conversando com: " + (contact_name || normalized)
 
-    renderChat(conversationsCache[number] || [])
-
+    renderChat(messages)
     renderConversations()
+
+    saveState() // 🔥 salva o estado imediatamente
 }
 
 /* =========================
@@ -830,7 +968,7 @@ function renderChat(messages) {
 
                 if (m.media_path) {
                     let path = m.media_path.replace(/^\/+/, "")
-                    url = CONFIG.SOCKET_URL + `/ uploads / ${m.session_id} / ` + path
+                    url = CONFIG.SOCKET_URL + `/uploads/${m.session_id}/` + path
                     fileName = path.split('/').pop()
                 }
             }
@@ -840,29 +978,35 @@ function renderChat(messages) {
         }
 
         return `
-            ${m.body && m.body !== '[Mídia recebida]' ? `
-                <div style="text-align: center;">
-                    ${daySeparator}
-                </div>
-                <div class="chat-message ${type}">
-                    <div class="chat-bubble">        
-                        <!-- <div>${m.contact_name ? m.contact_name + ` +${m.from}` : `+${m.from}`}</div> 
-                        <div class="line"></div> -->
-                        ${media}
-                        ${(m.body || "").replace(/\n/g, "<br>")}
-                        <div class="msg-meta" style="text-align: right;">
-                            <span>${formatTime(m.timestamp)}</span>
-                            <span>${m.status || ""}</span>
+                ${daySeparator ? `
+                    <div style="text-align:center;">
+                        ${daySeparator}
+                    </div>
+                ` : ''}
+
+                ${((m.body && m.body !== '[Mídia recebida]') || m.has_media) ? `
+                    <div class="chat-message ${type}">
+                        <div class="chat-bubble">
+                            ${media}
+                            ${(m.body || "").replace(/\n/g, "<br>")}
+
+                            <div class="msg-meta" style="text-align: right;">
+                                <span>${formatTime(m.timestamp)}</span>
+                                <span>${m.status || ""}</span>
+                            </div>
                         </div>
                     </div>
-                </div>
-            ` : ''
-            }
+                ` : ''}
             `
 
     }).join("")
 
-    container.scrollTop = container.scrollHeight
+    const isNearBottom =
+        container.scrollHeight - container.scrollTop - container.clientHeight < 100
+
+    if (isNearBottom) {
+        container.scrollTop = container.scrollHeight
+    }
 
 }
 
@@ -886,6 +1030,14 @@ function handleFile(e) {
 
 function removeMedia() {
 
+    if (selectedMedia) {
+        selectedMedia.forEach(file => {
+            if (file?._previewUrl) {
+                URL.revokeObjectURL(file._previewUrl)
+            }
+        })
+    }
+
     selectedMedia = null
 
     const input = document.getElementById("chatFile")
@@ -893,56 +1045,108 @@ function removeMedia() {
 
     const preview = document.getElementById("mediaPreview")
     if (preview) preview.style.display = "none"
-
 }
 
 /* =========================
    POLLING
 ========================= */
-function startPolling() {
+let isPolling = false
+let notifiedMessages = new Set()
 
-    if (pollingInterval) clearInterval(pollingInterval)
+async function pollingLoop() {
+    // só roda se a página de mensagens estiver ativa e existir sessão
+    if (!messagesPageActive || !currentSession) {
+        setTimeout(pollingLoop, 4000)
+        return
+    }
 
-    pollingInterval = setInterval(async () => {
+    if (isPolling) {
+        setTimeout(pollingLoop, 4000)
+        return
+    }
 
-        if (!messagesPageActive) return
-        if (!currentSession) return
+    isPolling = true
+    let hasNewMessage = false
 
-        const res = await axios.get(CONFIG.API_URL + "/" + currentSession + "?limit=50")
-
-        const messages = res.data.data
+    try {
+        // pega últimas 50 mensagens da API
+        const res = await axios.get(`${CONFIG.API_URL}/${currentSession}?limit=50`)
+        const messages = res.data?.data || []
 
         messages.forEach(m => {
-
             const number = getContactNumber(m)
+            if (!number) return
 
-            if (!conversationsCache[number]) {
-                conversationsCache[number] = []
+            // garante que o cache exista
+            if (!conversationsCache[number]) conversationsCache[number] = []
+            // garante que _ids sempre exista
+            conversationsCache[number]._ids = conversationsCache[number]._ids || new Set()
+
+            // evita adicionar mensagem duplicada
+            if (conversationsCache[number]._ids.has(m.id)) return
+
+            // adiciona a mensagem e registra id
+            conversationsCache[number]._ids.add(m.id)
+            conversationsCache[number].push(m)
+            hasNewMessage = true
+
+            const lastSeen = lastSeenTimestamp[number] || 0
+            const msgTime = new Date(m.timestamp).getTime()
+            const isOpenChat = number === currentChatNumber
+
+            // 🔔 notificação
+            if (
+                m.direction === "received" &&
+                msgTime > lastSeen &&
+                !notifiedMessages.has(m.id)
+            ) {
+                notifiedMessages.add(m.id)
+
+                const preview =
+                    m.body && m.body !== '[Mídia recebida]' ? m.body : "📎 Mídia"
+
+                showNotification(preview, number)
+                saveState() // salva estado após notificação
             }
 
-            const exists = conversationsCache[number].find(x => x.id === m.id)
-
-            if (!exists) {
-
-                conversationsCache[number].push(m)
-
-                if (number !== currentChatNumber) {
+            // 🔢 contador de mensagens não lidas
+            if (m.direction === "received" && msgTime > lastSeen) {
+                if (!isOpenChat) {
                     unreadCounter[number] = (unreadCounter[number] || 0) + 1
+                } else {
+                    lastSeenTimestamp[number] = msgTime
                 }
-
+                saveState() // salva estado após contador
             }
-
         })
 
-        renderConversations()
-
-        if (currentChatNumber) {
-            renderChat(conversationsCache[currentChatNumber])
+        // ordena mensagens por timestamp dentro de cada conversa
+        if (hasNewMessage) {
+            Object.keys(conversationsCache).forEach(number => {
+                conversationsCache[number].sort(
+                    (a, b) => new Date(a.timestamp) - new Date(b.timestamp)
+                )
+            })
         }
 
-    }, 4000)
+        // renderiza apenas se houver novidade
+        if (hasNewMessage) {
+            renderConversations()
+            if (currentChatNumber && conversationsCache[currentChatNumber]) {
+                renderChat(conversationsCache[currentChatNumber])
+            }
+        }
 
+    } catch (e) {
+        console.error("Polling error", e)
+    } finally {
+        isPolling = false
+        setTimeout(pollingLoop, 4000)
+    }
 }
+
+// inicia o loop
+pollingLoop()
 
 /* =========================
    ENVIAR MENSAGEM
