@@ -671,7 +671,7 @@ async function initMessagesPage() {
 async function loadMessageSessions() {
 
     const select = document.getElementById("msgSession")
-    if (!select) return
+    // if (!select) return
 
     const res = await axios.get(CONFIG.API_URL + "/sessions")
 
