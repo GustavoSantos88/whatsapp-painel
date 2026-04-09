@@ -609,22 +609,22 @@ async function initMessagesPage() {
     if (!document.getElementById("msgSession")) return
 
     // 🔔 pedir permissão
-    if ("Notification" in window) {
+    // if ("Notification" in window) {
 
-        if (Notification.permission === "default") {
-            await Notification.requestPermission()
-        }
+    //     if (Notification.permission === "default") {
+    //         await Notification.requestPermission()
+    //     }
 
-        if (Notification.permission === "denied") {
-            console.warn("🚫 Notificações bloqueadas pelo navegador")
+    //     if (Notification.permission === "denied") {
+    //         console.warn("🚫 Notificações bloqueadas pelo navegador")
 
-            // opcional: avisar usuário
-            setTimeout(() => {
-                alert("Ative as notificações no navegador para receber alertas de mensagens.")
-            }, 2000)
-        }
+    //         // opcional: avisar usuário
+    //         setTimeout(() => {
+    //             alert("Ative as notificações no navegador para receber alertas de mensagens.")
+    //         }, 2000)
+    //     }
 
-    }
+    // }
 
     await loadMessageSessions()
 
