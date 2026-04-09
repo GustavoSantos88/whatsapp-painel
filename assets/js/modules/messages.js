@@ -1144,7 +1144,7 @@ function renderChat(messages) {
                     </div>
                 ` : ''}
 
-                ${((m.body && m.body !== null && m.body !== '[Mídia recebida]') || m.has_media) ? `
+               ${((m.body && m.body.trim() !== "" && m.body !== '[Mídia recebida]') || (m.has_media && media)) ? `
                     <div class="chat-message ${type}">
                         <div class="chat-bubble">
                             ${media}
