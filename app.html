@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <!-- Responsividade -->
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <!-- Favicon -->
     <link rel="icon" type="image/png" href="./assets/images/logo.png">
 
@@ -16,10 +16,12 @@
 
 <body>
 
-    <div class="layout">
+    <div class="app-layout">
 
-        <aside class="sidebar">
+        <!-- SIDEBAR -->
+        <aside class="app-sidebar">
             <h2 id="brandSidebar"></h2>
+
             <button id="dashboardBtn" style="display:none;" onclick="loadPage('dashboard')">Dashboard</button>
             <button id="sessionsBtn" style="display:none;" onclick="loadPage('sessions')">Sessões</button>
             <button id="messagesBtn" style="display:none;" onclick="loadPage('messages')">Mensagens</button>
@@ -27,16 +29,31 @@
             <button id="adminBtn" style="display:none;" onclick="loadPage('admin')">Admin</button>
 
             <hr>
-            <button id="changePasswordBtn" style="display:none;" onclick="loadPage('changePassword')">Alterar
-                Senha</button>
+
+            <button id="changePasswordBtn" style="display:none;" onclick="loadPage('changePassword')">
+                Alterar Senha
+            </button>
 
             <button onclick="toggleTheme()">Tema</button>
             <button onclick="logout()">Sair</button>
         </aside>
 
-        <main class="content" id="content"></main>
+        <!-- CONTEÚDO -->
+        <div style="flex:1; display:flex; flex-direction:column;">
+
+            <!-- HEADER MOBILE -->
+            <div class="main-header">
+                <span class="menu-toggle" onclick="toggleMenu()">☰</span>
+                <strong>Painel</strong>
+            </div>
+
+            <main class="app-content" id="content"></main>
+        </div>
 
     </div>
+
+    <!-- OVERLAY -->
+    <div class="sidebar-overlay" onclick="toggleMenu()"></div>
 
     <script src="assets/js/js/axios.min.js"></script>
     <script src="assets/js/js/socket.io.min.js"></script>
@@ -52,6 +69,21 @@
 
 
     <script>
+
+        function toggleMenu() {
+            const sidebar = document.querySelector(".app-sidebar")
+            const overlay = document.querySelector(".sidebar-overlay")
+
+            sidebar.classList.toggle("open")
+            overlay.classList.toggle("show")
+        }
+
+        document.querySelectorAll(".app-sidebar button").forEach(btn => {
+            btn.addEventListener("click", () => {
+                document.querySelector(".app-sidebar").classList.remove("open")
+                document.querySelector(".sidebar-overlay").classList.remove("show")
+            })
+        })
 
         const version = Date.now();
 

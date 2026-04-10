@@ -409,14 +409,12 @@ function selectContact(number, name) {
 
     currentChatNumber = normalized
 
-    const header = document.getElementById("chatHeader")
+    const header = document.getElementById("chatHeaderContent")
     if (header) header.innerHTML = "Conversando com: " + name
 
     renderChat([])
 
     openChat(number)
-
-    renderConversations()
 
     document.getElementById("contactsModal").style.display = "none"
 }
@@ -544,46 +542,125 @@ document.addEventListener("click", (e) => {
 /* =========================
    PAGE (LAYOUT CORRIGIDO)
 ========================= */
+// function messagesPage() {
+//     messagesPageActive = true
+//     setTimeout(initMessagesPage, 50)
+
+//     return `
+//     <div class="chat-layout">
+//         <!-- Barra Lateral de Conversas -->
+//         <div class="chat-conversations">
+//             <select id="msgSession" style="padding:19px; border:none; border-bottom:1px solid var(--border-color); background:var(--bg-card); font-weight:bold;"></select>            
+//             <div class="chat-search" style="display:flex; gap:5px;">
+//                 <input class="" id="searchChat" placeholder="🔍 Buscar conversa..." style="flex:1; padding:5px;">                
+//                 <button class="primary-btn" style="margin:0; padding:10px;" id="contactsBtn" onclick="openContacts(event)">👤</button>
+//             </div>
+//             <div id="contactsModal" class="contacts-modal"></div>
+
+//             <div id="conversationsList">
+//                 <div class="center" style="padding:20px; font-size:13px; color:var(--text-muted);">Carregando conversas...</div>
+//             </div>
+//         </div>
+
+//         <!-- Área de Mensagens -->
+//         <div class="chat-messages">
+//             <div id="chatHeader" class="chat-header" style="padding:18px; background:var(--bg-card); border-bottom:1px solid var(--border-color); font-weight:bold;">
+//                 Selecione uma conversa
+//             </div>
+//             <div id="chatMessages">
+//                 <div class="center" style="color:var(--text-muted);">Nenhuma conversa selecionada</div>
+//             </div>
+//             <div id="mediaPreview"></div>             
+//             <div class="chat-input" style="padding:15px; background:var(--bg-card); border-top:1px solid var(--border-color); display:flex; gap:10px; align-items:center;">
+//                 <input type="file" id="chatFile" multiple style="display:none">                
+//                 <button class="primary-btn" style="margin:0; padding:10px;" onclick="document.getElementById('chatFile').click()">📎</button>
+
+//                 <button  id="emojiBtn" class="primary-btn" style="margin:0; padding:10px;" onclick="toggleEmojiPicker()">😊</button>
+//                 <div id="emojiPicker" class="emoji-box"></div>
+
+//                 <input id="chatText" placeholder="Escreva uma mensagem..." autofocus style="flex:1; padding:12px; border-radius:8px; border:1px solid var(--border-color); background:var(--input-bg); color:var(--text-main);">
+//                 <button class="primary-btn" style="margin:0; padding:10px 20px;" onclick="sendChatMessage()">Enviar</button>
+//             </div>
+//         </div>
+//     </div>`
+// }
+
+function toggleSidebar() {
+    document.querySelector('.chat-conversations').classList.toggle('open')
+    document.getElementById('chatOverlay').classList.toggle('show')
+}
+
+function closeSidebar() {
+    document.querySelector('.chat-conversations').classList.remove('open')
+    document.getElementById('chatOverlay').classList.remove('show')
+}
+
 function messagesPage() {
     messagesPageActive = true
     setTimeout(initMessagesPage, 50)
 
     return `
+    <h1>Mensagem</h1>
+
     <div class="chat-layout">
-        <!-- Barra Lateral de Conversas -->
+
+        <!-- OVERLAY MOBILE -->
+        <div id="chatOverlay" class="chat-overlay" onclick="closeSidebar()"></div>
+
+        <!-- Barra Lateral -->
         <div class="chat-conversations">
             <select id="msgSession" style="padding:19px; border:none; border-bottom:1px solid var(--border-color); background:var(--bg-card); font-weight:bold;"></select>            
+            
             <div class="chat-search" style="display:flex; gap:5px;">
-                <input class="" id="searchChat" placeholder="🔍 Buscar conversa..." style="flex:1; padding:5px;">                
+                <input id="searchChat" placeholder="🔍 Buscar conversa..." style="flex:1; padding:5px;">                
                 <button class="primary-btn" style="margin:0; padding:10px;" id="contactsBtn" onclick="openContacts(event)">👤</button>
             </div>
+
             <div id="contactsModal" class="contacts-modal"></div>
 
             <div id="conversationsList">
-                <div class="center" style="padding:20px; font-size:13px; color:var(--text-muted);">Carregando conversas...</div>
+                <div class="center" style="padding:20px; font-size:13px; color:var(--text-muted);">
+                    Carregando conversas...
+                </div>
             </div>
         </div>
 
         <!-- Área de Mensagens -->
         <div class="chat-messages">
-            <div id="chatHeader" class="chat-header" style="padding:18px; background:var(--bg-card); border-bottom:1px solid var(--border-color); font-weight:bold;">
-                Selecione uma conversa
+
+            <!-- HEADER COM BOTÃO MOBILE -->
+            <div id="chatHeader" class="chat-header">
+                <span class="mobile-toggle" onclick="toggleSidebar()">☰</span>
+
+                <div id="chatHeaderContent">
+                    Selecione uma conversa
+                </div>
             </div>
+
             <div id="chatMessages">
-                <div class="center" style="color:var(--text-muted);">Nenhuma conversa selecionada</div>
+                <div class="center" style="color:var(--text-muted);">
+                    Nenhuma conversa selecionada
+                </div>
             </div>
+
             <div id="mediaPreview"></div>             
+
             <div class="chat-input" style="padding:15px; background:var(--bg-card); border-top:1px solid var(--border-color); display:flex; gap:10px; align-items:center;">
+                
                 <input type="file" id="chatFile" multiple style="display:none">                
                 <button class="primary-btn" style="margin:0; padding:10px;" onclick="document.getElementById('chatFile').click()">📎</button>
 
-                <button  id="emojiBtn" class="primary-btn" style="margin:0; padding:10px;" onclick="toggleEmojiPicker()">😊</button>
+                <button id="emojiBtn" class="primary-btn" style="margin:0; padding:10px;" onclick="toggleEmojiPicker()">😊</button>
                 <div id="emojiPicker" class="emoji-box"></div>
 
-                <input id="chatText" placeholder="Escreva uma mensagem..." style="flex:1; padding:12px; border-radius:8px; border:1px solid var(--border-color); background:var(--input-bg); color:var(--text-main);">
+                <input id="chatText" placeholder="Escreva uma mensagem..." autofocus
+                    style="flex:1; padding:12px; border-radius:8px; border:1px solid var(--border-color); background:var(--input-bg); color:var(--text-main);">
+
                 <button class="primary-btn" style="margin:0; padding:10px 20px;" onclick="sendChatMessage()">Enviar</button>
             </div>
+
         </div>
+        <div id="chatOverlay" class="chat-overlay" onclick="closeSidebar()"></div>
     </div>`
 }
 
@@ -666,41 +743,7 @@ async function initMessagesPage() {
 }
 
 /* =========================
-   SESSOES
-========================= */
-// async function loadMessageSessions() {
-
-//     const select = document.getElementById("msgSession")
-//     if (!select) return
-
-//     const res = await axios.get(CONFIG.API_URL + "/sessions")
-
-//     select.innerHTML = res.data.data.map(s =>
-//         `<option value="${s.session_id}" data-phone="${s.phone_number}">
-//        ${s.profile_name ? s.profile_name : '+' + s.phone_number}
-//      </option>`).join('')
-
-//     // Ao carregar a lista de sessões
-//     const firstOption = select.options[0]
-//     currentSessionId = firstOption.value
-//     currentInstanceNumber = firstOption.dataset.phone || firstOption.getAttribute('data-phone') || firstOption.phone_number
-//     console.log("Sessão inicial:", currentSessionId, "Número da sessão:", currentInstanceNumber)
-
-//     select.addEventListener("change", (e) => {
-
-//         const selectedOption = e.target.options[e.target.selectedIndex]
-
-//         currentSessionId = e.target.value
-//         currentInstanceNumber = selectedOption.dataset.phone
-
-//         loadConversations()
-//     })
-
-//     loadConversations()
-// }
-
-/* =========================
-   SESSOES E CONVERSAS AJUSTADAS
+   SESSOES E CONVERSAS
 ========================= */
 async function loadMessageSessions() {
 
@@ -723,7 +766,7 @@ async function loadMessageSessions() {
     currentInstanceNumber = firstOption.dataset.phone || firstOption.getAttribute('data-phone')
     currentSession = currentSessionId
 
-    console.log("Sessão inicial:", currentSessionId, "Número da sessão:", currentInstanceNumber)
+    // console.log("Sessão inicial:", currentSessionId, "Número da sessão:", currentInstanceNumber)
 
     // Ao mudar de sessão
     select.addEventListener("change", async (e) => {
@@ -744,101 +787,8 @@ async function loadMessageSessions() {
     await loadConversations()
 }
 
-// async function loadConversations() {
-
-//     if (!currentSessionId) {
-//         console.warn("SessionId não definido")
-//         return
-//     }
-
-//     const res = await axios.get(`${CONFIG.API_URL}/${currentSessionId}?limit=200`)
-//     const messages = res.data.data || []
-
-//     const grouped = {}
-
-//     // Agrupa mensagens por contato
-//     messages.forEach(m => {
-//         const number = getContactNumber(m)
-//         if (!number) return
-//         if (!grouped[number]) grouped[number] = []
-//         grouped[number].push(m)
-//     })
-
-//     Object.keys(grouped).forEach(number => {
-
-//         if (!conversationsCache[number]) conversationsCache[number] = []
-
-//         // Inicializa Set de IDs para evitar duplicação
-//         if (!conversationsCache[number]._ids) {
-//             conversationsCache[number]._ids = new Set(conversationsCache[number].map(x => x.id))
-//         }
-
-//         grouped[number].forEach(m => {
-//             if (!conversationsCache[number]._ids.has(m.id)) {
-//                 conversationsCache[number]._ids.add(m.id)
-//                 conversationsCache[number].push(m)
-//             }
-//         })
-
-//         // Ordena mensagens por timestamp
-//         conversationsCache[number].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp))
-//     })
-
-//     renderConversations()
-// }
-
 /* =========================
    LOAD CONVERSAS
-========================= */
-// async function loadConversations() {
-
-//     const select = document.getElementById("msgSession")
-//     if (!select || !select.value) return
-
-//     const sessionId = select.value
-//     currentSession = sessionId
-
-//     const res = await axios.get(CONFIG.API_URL + "/" + sessionId + "?limit=200")
-//     const messages = res.data.data
-
-//     const grouped = {}
-
-//     messages.forEach(m => {
-//         const number = getContactNumber(m)
-//         if (!number) return
-//         if (!grouped[number]) grouped[number] = []
-//         grouped[number].push(m)
-//     })
-
-//     // ✅ Ordenar cada grupo por timestamp crescente
-//     Object.keys(grouped).forEach(number => {
-
-//         if (!conversationsCache[number]) {
-//             conversationsCache[number] = []
-//         }
-
-//         grouped[number].forEach(m => {
-
-//             const exists = conversationsCache[number].find(x => x.id === m.id)
-
-//             if (!exists) {
-//                 conversationsCache[number].push(m)
-//                 conversationsCache[number].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp))
-//             }
-
-//         })
-
-//         // 🔥 ordena SEMPRE
-//         conversationsCache[number].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp))
-
-//     })
-
-//     // ✅ Renderizar a lista já com a última mensagem correta
-//     renderConversations()
-// }
-
-/* =========================
-   LOAD CONVERSAS AJUSTADO
 ========================= */
 async function loadConversations() {
 
@@ -1005,38 +955,6 @@ function renderConversations() {
 /* =========================
    OPEN CHAT
 ========================= */
-// function openChat(number) {
-
-//     const normalized = normalizeNumber(number)
-//     currentChatNumber = normalized
-
-//     const messages = conversationsCache[normalized] || []
-
-//     if (messages.length) {
-//         // Pega apenas a última mensagem recebida
-//         const lastReceived = [...messages].reverse().find(m => m.direction === "received")
-//         if (lastReceived) {
-//             lastSeenTimestamp[normalized] = new Date(lastReceived.timestamp).getTime()
-//         }
-//     }
-
-//     // Zera o contador de não lidos
-//     unreadCounter[normalized] = 0
-
-//     // Atualiza cabeçalho
-//     const contact_name = messages[messages.length - 1]?.contact_name
-//     const header = document.getElementById("chatHeader")
-//     if (header) header.innerHTML = "Conversando com: " + (contact_name || normalized)
-
-//     renderChat(messages)
-//     renderConversations()
-
-//     saveState() // 🔥 salva o estado imediatamente
-// }
-
-/* =========================
-   OPEN CHAT AJUSTADO
-========================= */
 function openChat(number) {
 
     const normalized = normalizeNumber(number)
@@ -1057,12 +975,57 @@ function openChat(number) {
 
     // Atualiza cabeçalho
     const contact_name = messages[messages.length - 1]?.contact_name
-    const header = document.getElementById("chatHeader")
-    if (header) header.innerHTML = "Conversando com: " + (contact_name || normalized)
+    const header = document.getElementById("chatHeaderContent")
+    if (header && contact_name) header.innerHTML = "Conversando com: " + (contact_name || normalized)
+
+    if (window.innerWidth <= 768) {
+        closeSidebar()
+    }
 
     renderChat(messages)
     renderConversations()
     saveState()
+}
+
+// Válida tipo de mensagem
+function formatMessageText(text) {
+    if (!text) return ""
+
+    // Regex para detectar URLs
+    const urlRegex = /(https?:\/\/[^\s]+)/g
+
+    return text
+        .replace(urlRegex, (url) => {
+            return `<a href="${url}" target="_blank" style="color:#4da6ff; text-decoration:underline;">${url}</a>`
+        })
+        .replace(/\n/g, "<br>")
+}
+
+// Válida o dia da conversa
+function getDayLabel(timestamp) {
+
+    const messageDate = new Date(timestamp)
+    const today = new Date()
+
+    const normalize = (date) => {
+        const d = new Date(date)
+        d.setHours(0, 0, 0, 0)
+        return d
+    }
+
+    const diffTime = normalize(today) - normalize(messageDate)
+    const diffDays = diffTime / (1000 * 60 * 60 * 24)
+
+    if (diffDays === 0) return "Hoje"
+    if (diffDays === 1) return "Ontem"
+
+    // até 7 dias → nome do dia
+    if (diffDays <= 7) {
+        return messageDate.toLocaleDateString("pt-BR", { weekday: "long" })
+    }
+
+    // muito antigo → data completa
+    return formatDay(timestamp)
 }
 
 /* =========================
@@ -1079,28 +1042,7 @@ function renderChat(messages) {
 
     container.innerHTML = messages.map(m => {
 
-        const messageDate = new Date(m.timestamp)
-        const today = new Date()
-
-        // Zerar horas para comparação correta
-        const normalize = (date) => {
-            const d = new Date(date)
-            d.setHours(0, 0, 0, 0)
-            return d
-        }
-
-        const diffTime = normalize(today) - normalize(messageDate)
-        const diffDays = diffTime / (1000 * 60 * 60 * 24)
-
-        let dayLabel = ""
-
-        if (diffDays === 0) {
-            dayLabel = "Hoje"
-        } else if (diffDays === 1) {
-            dayLabel = "Ontem"
-        } else {
-            dayLabel = formatDay(m.timestamp) // ex: 12/03/2026
-        }
+        let dayLabel = getDayLabel(m.timestamp)
 
         let daySeparator = ""
 
@@ -1110,7 +1052,6 @@ function renderChat(messages) {
         }
 
         const type = m.direction === "sent" ? "chat-sent" : "chat-received"
-
 
         let media = ""
 
@@ -1148,7 +1089,8 @@ function renderChat(messages) {
                     <div class="chat-message ${type}">
                         <div class="chat-bubble">
                             ${media}
-                            ${(m.body || "").replace(/\n/g, "<br>")}
+                            
+                            ${formatMessageText(m.body)}
 
                             <div class="msg-meta" style="text-align: right;">
                                 <span>${formatTime(m.timestamp)}</span>
@@ -1167,6 +1109,9 @@ function renderChat(messages) {
     if (isNearBottom) {
         container.scrollTop = container.scrollHeight
     }
+
+    const chatText = document.getElementById("chatText")
+    chatText.focus()
 
 }
 
@@ -1212,103 +1157,6 @@ function removeMedia() {
 ========================= */
 let isPolling = false
 let notifiedMessages = new Set()
-
-// async function pollingLoop() {
-//     // só roda se a página de mensagens estiver ativa e existir sessão
-//     if (!messagesPageActive || !currentSession) {
-//         setTimeout(pollingLoop, 4000)
-//         return
-//     }
-
-//     if (isPolling) {
-//         setTimeout(pollingLoop, 4000)
-//         return
-//     }
-
-//     isPolling = true
-//     let hasNewMessage = false
-
-//     try {
-//         // pega últimas 50 mensagens da API
-//         const res = await axios.get(`${CONFIG.API_URL}/${currentSession}?limit=50`)
-//         const messages = res.data?.data || []
-
-//         messages.forEach(m => {
-//             const number = getContactNumber(m)
-//             if (!number) return
-
-//             // garante que o cache exista
-//             if (!conversationsCache[number]) conversationsCache[number] = []
-//             // garante que _ids sempre exista
-//             conversationsCache[number]._ids = conversationsCache[number]._ids || new Set()
-
-//             // evita adicionar mensagem duplicada
-//             if (conversationsCache[number]._ids.has(m.id)) return
-
-//             // adiciona a mensagem e registra id
-//             conversationsCache[number]._ids.add(m.id)
-//             conversationsCache[number].push(m)
-//             hasNewMessage = true
-
-//             const lastSeen = lastSeenTimestamp[number] || 0
-//             const msgTime = new Date(m.timestamp).getTime()
-//             const isOpenChat = number === currentChatNumber
-
-//             // 🔔 notificação
-//             if (
-//                 m.direction === "received" &&
-//                 msgTime > lastSeen &&
-//                 !notifiedMessages.has(m.id)
-//             ) {
-//                 notifiedMessages.add(m.id)
-
-//                 const preview =
-//                     m.body && m.body !== '[Mídia recebida]' ? m.body : "📎 Mídia"
-
-//                 showNotification(preview, number)
-//                 saveState() // salva estado após notificação
-//             }
-
-//             // 🔢 contador de mensagens não lidas
-//             if (m.direction === "received" && msgTime > lastSeen) {
-//                 if (!isOpenChat) {
-//                     unreadCounter[number] = (unreadCounter[number] || 0) + 1
-//                 } else {
-//                     lastSeenTimestamp[number] = msgTime
-//                 }
-//                 saveState() // salva estado após contador
-//             }
-//         })
-
-//         // ordena mensagens por timestamp dentro de cada conversa
-//         if (hasNewMessage) {
-//             Object.keys(conversationsCache).forEach(number => {
-//                 conversationsCache[number].sort(
-//                     (a, b) => new Date(a.timestamp) - new Date(b.timestamp)
-//                 )
-//             })
-//         }
-
-//         // renderiza apenas se houver novidade
-//         if (hasNewMessage) {
-//             renderConversations()
-//             if (currentChatNumber && conversationsCache[currentChatNumber]) {
-//                 renderChat(conversationsCache[currentChatNumber])
-//             }
-//         }
-
-//     } catch (e) {
-//         console.error("Polling error", e)
-//     } finally {
-//         isPolling = false
-//         setTimeout(pollingLoop, 4000)
-//     }
-// }
-
-// inicia o loop
-/* =========================
-   POLLING LOOP AJUSTADO
-========================= */
 
 async function pollingLoop() {
     if (!messagesPageActive || !currentSession) {
@@ -1412,7 +1260,7 @@ async function sendChatMessage() {
 
         formData.append("sessionId", currentSession)
         formData.append("number", currentChatNumber)
-        console.log("Número enviado:", currentChatNumber)
+        // console.log("Número enviado:", currentChatNumber)
 
         if (message) {
             formData.append("message", message)
