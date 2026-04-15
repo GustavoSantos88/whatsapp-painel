@@ -539,52 +539,6 @@ document.addEventListener("click", (e) => {
         })
 })
 
-/* =========================
-   PAGE (LAYOUT CORRIGIDO)
-========================= */
-// function messagesPage() {
-//     messagesPageActive = true
-//     setTimeout(initMessagesPage, 50)
-
-//     return `
-//     <div class="chat-layout">
-//         <!-- Barra Lateral de Conversas -->
-//         <div class="chat-conversations">
-//             <select id="msgSession" style="padding:19px; border:none; border-bottom:1px solid var(--border-color); background:var(--bg-card); font-weight:bold;"></select>            
-//             <div class="chat-search" style="display:flex; gap:5px;">
-//                 <input class="" id="searchChat" placeholder="🔍 Buscar conversa..." style="flex:1; padding:5px;">                
-//                 <button class="primary-btn" style="margin:0; padding:10px;" id="contactsBtn" onclick="openContacts(event)">👤</button>
-//             </div>
-//             <div id="contactsModal" class="contacts-modal"></div>
-
-//             <div id="conversationsList">
-//                 <div class="center" style="padding:20px; font-size:13px; color:var(--text-muted);">Carregando conversas...</div>
-//             </div>
-//         </div>
-
-//         <!-- Área de Mensagens -->
-//         <div class="chat-messages">
-//             <div id="chatHeader" class="chat-header" style="padding:18px; background:var(--bg-card); border-bottom:1px solid var(--border-color); font-weight:bold;">
-//                 Selecione uma conversa
-//             </div>
-//             <div id="chatMessages">
-//                 <div class="center" style="color:var(--text-muted);">Nenhuma conversa selecionada</div>
-//             </div>
-//             <div id="mediaPreview"></div>             
-//             <div class="chat-input" style="padding:15px; background:var(--bg-card); border-top:1px solid var(--border-color); display:flex; gap:10px; align-items:center;">
-//                 <input type="file" id="chatFile" multiple style="display:none">                
-//                 <button class="primary-btn" style="margin:0; padding:10px;" onclick="document.getElementById('chatFile').click()">📎</button>
-
-//                 <button  id="emojiBtn" class="primary-btn" style="margin:0; padding:10px;" onclick="toggleEmojiPicker()">😊</button>
-//                 <div id="emojiPicker" class="emoji-box"></div>
-
-//                 <input id="chatText" placeholder="Escreva uma mensagem..." autofocus style="flex:1; padding:12px; border-radius:8px; border:1px solid var(--border-color); background:var(--input-bg); color:var(--text-main);">
-//                 <button class="primary-btn" style="margin:0; padding:10px 20px;" onclick="sendChatMessage()">Enviar</button>
-//             </div>
-//         </div>
-//     </div>`
-// }
-
 function toggleSidebar() {
     document.querySelector('.chat-conversations').classList.toggle('open')
     document.getElementById('chatOverlay').classList.toggle('show')
@@ -1085,10 +1039,10 @@ function renderChat(messages) {
                     </div>
                 ` : ''}
 
-               ${((m.body && m.body.trim() !== "" && m.body !== '[Mídia recebida]') || (m.has_media && media)) ? `
+               ${((m.body && m.body.trim() !== "") && m.body !== '[Mídia recebida]') || (m.has_media && media) ? `
                     <div class="chat-message ${type}">
                         <div class="chat-bubble">
-                            ${media}
+                            ${media}                            
                             
                             ${formatMessageText(m.body)}
 
@@ -1098,8 +1052,9 @@ function renderChat(messages) {
                             </div>
                         </div>
                     </div>
-                ` : ''}
-            `
+                ` : ''
+            }
+`
 
     }).join("")
 
