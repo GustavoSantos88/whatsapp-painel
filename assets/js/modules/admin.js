@@ -87,10 +87,10 @@ function adminPage() {
 // ============================
 
 function initAdminPage() {
-    const container = document.querySelector('.content')
+    const container = document.querySelector('.app-content')
 
     if (!container) {
-        console.error('Container .content não encontrado')
+        console.error('Container .app-content não encontrado')
         return
     }
 
