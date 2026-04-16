@@ -891,7 +891,7 @@ function renderConversations() {
                         <strong>${contactName}</strong>
 
                         <div class="conv-last">
-                            ${preview || ""}
+                            ${preview.replace(/\*(.*?)\*/g, "<b>$1</b>") || ""}
                         </div>
                     </div>
 
@@ -958,15 +958,39 @@ function openChat(number) {
 function formatMessageText(text) {
     if (!text) return ""
 
-    // Regex para detectar URLs
     const urlRegex = /(https?:\/\/[^\s]+)/g
+    const videoExtensions = /\.(mp4|webm|ogg)$/i
 
     return text
+        .replace(/\*(.*?)\*/g, "<b>$1</b>")
         .replace(urlRegex, (url) => {
-            return `<a href="${url}" target="_blank" style="color:#4da6ff; text-decoration:underline;">${url}</a>`
+            // Limpa a URL de espaços ou quebras que venham junto
+            const cleanUrl = url.trim().split('?')[0];
+
+
+            // --- FACEBOOK ---
+            if (url.includes("facebook.com")) {
+
+                return '<a href="' + url + '" target="_blank" rel="noopener noreferrer" style="color:#4da6ff; text-decoration:underline;">' + url + '</a>';
+            }
+
+            // --- INSTAGRAM ---
+            if (url.includes("instagram.com")) {
+                const igUrl = cleanUrl.endsWith('/') ? cleanUrl : cleanUrl + '/';
+                return '<br><iframe src="' + igUrl + 'embed/" width="100%" height="450" frameborder="0" scrolling="no" allowtransparency="true" style="border-radius:8px; margin: 10px 0; background: #fff;"></iframe><br>';
+            }
+
+            // --- VÍDEO DIRETO ---
+            if (videoExtensions.test(cleanUrl)) {
+                return '<br><video src="' + url + '" controls style="max-width:100%; border-radius:8px; margin: 10px 0;">Seu navegador não suporta o vídeo.</video><br>';
+            }
+
+            // Link padrão
+            return '<a href="' + url + '" target="_blank" rel="noopener noreferrer" style="color:#4da6ff; text-decoration:underline;">' + url + '</a>';
         })
         .replace(/\n/g, "<br>")
 }
+
 
 // Válida o dia da conversa
 function getDayLabel(timestamp) {
