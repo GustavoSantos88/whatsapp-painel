@@ -13,7 +13,7 @@ function adminPage() {
         <div class="admin-page">
 
             <div class="admin-header">
-                <h1>Painel Admin</h1>
+                <h2 style="margin-top: 2px;"padden>Painel Admin</h2>
                 <button class="primary-btn" onclick="openUserModal()">+ Novo Usuário</button>
             </div>
 

@@ -7,7 +7,7 @@ function changePasswordPage() {
     const role = localStorage.getItem("role");
 
     return `
-        <h1>Alterar Senha</h1>
+        <h2 style="margin-top: 2px;">Alterar Senha</h2>
 
         <div class="admin-page">          
 

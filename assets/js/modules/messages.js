@@ -22,19 +22,36 @@ let contactsEnd = false
 
 let audioUnlocked = false
 
+// function showNotification(message, number) {
+
+//     // 🔔 Notificação do sistema
+//     // if ("Notification" in window && Notification.permission === "granted") {
+//     //     new Notification("Nova mensagem", {
+//     //         body: message,
+//     //         icon: "./assets/images/logo.png" // 👈 já resolvemos o ícone aqui também
+//     //     })
+//     // }
+
+//     // 🔊 SOM SEMPRE (independente da aba)
+//     playNotificationSound()
+// }
+
 function showNotification(message, number) {
+    // 1. O navegador está minimizado ou em outra aba?
+    const isWindowHidden = document.hidden || !document.hasFocus();
 
-    // 🔔 Notificação do sistema
-    // if ("Notification" in window && Notification.permission === "granted") {
-    //     new Notification("Nova mensagem", {
-    //         body: message,
-    //         icon: "./assets/images/logo.png" // 👈 já resolvemos o ícone aqui também
-    //     })
-    // }
+    // 2. O usuário está em outra página do sistema (fora do /mensagens)?
+    const isNotOnMessagesPage = !messagesPageActive;
 
-    // 🔊 SOM SEMPRE (independente da aba)
-    playNotificationSound()
+    // 3. O usuário está na página de mensagens, mas conversando com OUTRA pessoa?
+    const isDifferentChat = currentChatNumber !== number;
+
+    // Toca som se: (Aba oculta/Sem foco) OU (Fora da tela de chat) OU (Em outro chat)
+    if (isWindowHidden || isNotOnMessagesPage || isDifferentChat) {
+        playNotificationSound();
+    }
 }
+
 
 function playNotificationSound() {
 
@@ -210,71 +227,65 @@ function isValidContact(c) {
     return true
 }
 
+const normalizeStr = (s) => s ? s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase() : "";
 // Busca contatos via API (somente quando usuário dispara)
 async function fetchContacts(reset = false) {
+    if (!currentSessionId) return;
+    // Removi o bloqueio de !contactsSearch para permitir carregar a lista se necessário
+    if (contactsLoading || (contactsEnd && !reset)) return;
 
-    if (!currentSessionId) {
-        console.warn("SessionId não definido")
-        return
-    }
-
-    if (!contactsSearch) return
-    if (contactsLoading || contactsEnd) return
-
-    contactsLoading = true
+    contactsLoading = true;
 
     if (reset) {
-        contactsPage = 1
-        contactsEnd = false
-
-        const list = document.getElementById("contactsList")
-        if (list) {
-            list.innerHTML = "<div style='padding:10px'>Buscando...</div>"
-        }
+        contactsPage = 1;
+        contactsEnd = false;
+        const list = document.getElementById("contactsList");
+        if (list) list.innerHTML = "<div style='padding:10px'>Buscando...</div>";
     }
 
     try {
-
-        const res = await axios.get(
-            CONFIG.API_URL + `/contacts/${currentSessionId}`, {
+        const res = await axios.get(CONFIG.API_URL + `/contacts/${currentSessionId}`, {
             params: {
+                // Se a API falha com acento, enviamos vazio para pegar a lista e filtrar no JS
+                // Ou enviamos o termo e o JS refina o que a API ignorar
                 search: contactsSearch,
                 page: contactsPage,
-                limit: 20
+                limit: 100 // Aumentamos o range para garantir que o contato esteja no lote
             }
-        }
-        )
+        });
 
-        const data =
-            res.data.data ||
-            res.data.contacts ||
-            res.data.result ||
-            []
+        const data = res.data.data || res.data.contacts || res.data.result || [];
 
-        if (!data.length && contactsPage === 1) {
+        // 1. Normalizamos o que o usuário digitou (ex: "mae")
+        const searchTermNormalized = normalizeStr(contactsSearch);
+
+        // 2. Filtro Front-end que ignora acentos (Mãe vira mae e bate com mae)
+        const validContacts = data.filter(c => {
+            if (!isValidContact(c)) return false;
+
+            const nameFromApi = normalizeStr(c.name);
+            // Se o nome da API normalizado contém sua busca normalizada
+            return nameFromApi.indexOf(searchTermNormalized) !== -1;
+        });
+
+        if (data.length < 20) contactsEnd = true;
+
+        if (reset) document.getElementById("contactsList").innerHTML = "";
+
+        // Se a busca falhou mas temos o termo, avisamos
+        if (!validContacts.length && contactsPage === 1) {
             document.getElementById("contactsList").innerHTML =
-                "<div style='padding:10px'>Nenhum contato encontrado</div>"
+                "<div style='padding:10px'>Nenhum contato encontrado para '" + contactsSearch + "'</div>";
         }
 
-        // paginação correta
-        if (data.length < 20) {
-            contactsEnd = true
-        }
-
-        const validContacts = data.filter(isValidContact)
-
-        appendContacts(validContacts)
-
-        contactsPage++
+        appendContacts(validContacts);
+        contactsPage++;
 
     } catch (err) {
-        console.error("Erro ao buscar contatos", err)
-
-        document.getElementById("contactsList").innerHTML =
-            "<div style='padding:10px;color:red;'>Erro ao carregar contatos</div>"
+        console.error("Erro ao buscar contatos", err);
+        document.getElementById("contactsList").innerHTML = "<div style='padding:10px;color:red;'>Erro ao carregar</div>";
     }
-
-    contactsLoading = false
+    contactsLoading = false;
 }
 
 // Adiciona contatos na lista (já filtrados)
@@ -326,7 +337,7 @@ function openContacts(event) {
 
     modal.innerHTML = `
         <div class="contacts-header">
-            <input id="searchContact" placeholder="Digite e pressione ENTER..." />
+            <input id="searchContact" placeholder="Digite e pressione ENTER..." spellcheck="true" lang="pt-br" />
         </div>
         <div class="contacts-list" id="contactsList">
             <div style="padding:10px;color:#666;">
@@ -378,25 +389,24 @@ function openContacts(event) {
 
 // Dispara busca manual (ENTER ou blur)
 function triggerContactSearch() {
+    const input = document.getElementById("searchContact");
+    const value = input ? input.value.trim() : "";
 
-    const input = document.getElementById("searchContact")
-
-    if (!input) return
-
-    const value = input.value.trim()
-
-    if (!value) return
-
-    // opcional: mínimo 3 caracteres
-    if (value.length < 3) {
-        alert("Digite pelo menos 3 letras")
-        return
+    if (value === "") {
+        contactsSearch = "";
+        contactsPage = 1;
+        contactsEnd = false;
+        document.getElementById("contactsList").innerHTML = `<div style="padding:10px;color:#666;">Digite um nome para buscar contatos</div>`;
+        return;
     }
 
-    contactsSearch = value
-
-    fetchContacts(true)
+    // Reset total para nova pesquisa
+    contactsSearch = value;
+    contactsPage = 1;
+    contactsEnd = false;
+    fetchContacts(true); // O 'true' garante que a lista antiga seja apagada
 }
+
 
 // Seleciona contato e abre conversa
 function selectContact(number, name) {
@@ -554,7 +564,7 @@ function messagesPage() {
     setTimeout(initMessagesPage, 50)
 
     return `
-    <h1>Mensagem</h1>
+    <h2 style="margin-top: 2px;">Mensagem</h2>
 
     <div class="chat-layout">
 
@@ -566,8 +576,8 @@ function messagesPage() {
             <select id="msgSession" style="padding:19px; border:none; border-bottom:1px solid var(--border-color); background:var(--bg-card); font-weight:bold;"></select>            
             
             <div class="chat-search" style="display:flex; gap:5px;">
-                <input id="searchChat" placeholder="🔍 Buscar conversa..." style="flex:1; padding:5px;">                
-                <button class="primary-btn" style="margin:0; padding:10px;" id="contactsBtn" onclick="openContacts(event)">👤</button>
+                <input id="searchChat" placeholder="🔍 Buscar conversa..." style="flex:1; padding:5px;" spellcheck="true" lang="pt-br">                
+                <button class="primary-btn" style="margin:0; padding:10px;" id="contactsBtn" onclick="openContacts(event)">Contatos</button>
             </div>
 
             <div id="contactsModal" class="contacts-modal"></div>
@@ -602,12 +612,12 @@ function messagesPage() {
             <div class="chat-input" style="padding:15px; background:var(--bg-card); border-top:1px solid var(--border-color); display:flex; gap:10px; align-items:center;">
                 
                 <input type="file" id="chatFile" multiple style="display:none">                
-                <button class="primary-btn" style="margin:0; padding:10px;" onclick="document.getElementById('chatFile').click()">📎</button>
+                <button class="primary-btn" style="margin:0; padding:10px;" onclick="document.getElementById('chatFile').click()">Anexo</button>
 
-                <button id="emojiBtn" class="primary-btn" style="margin:0; padding:10px;" onclick="toggleEmojiPicker()">😊</button>
+                <button id="emojiBtn" class="primary-btn" style="margin:0; padding:10px;" onclick="toggleEmojiPicker()">Emojis</button>
                 <div id="emojiPicker" class="emoji-box"></div>
 
-                <input id="chatText" placeholder="Escreva uma mensagem..." autofocus
+                <input id="chatText" placeholder="Escreva uma mensagem..." autofocus spellcheck="true" lang="pt-br"
                     style="flex:1; padding:12px; border-radius:8px; border:1px solid var(--border-color); background:var(--input-bg); color:var(--text-main);">
 
                 <button class="primary-btn" style="margin:0; padding:10px 20px;" onclick="sendChatMessage()">Enviar</button>
@@ -661,6 +671,8 @@ async function initMessagesPage() {
 
     const chatFile = document.getElementById("chatFile")
     const chatText = document.getElementById("chatText")
+    document.getElementById("chatText").setAttribute("spellcheck", "true");
+
     const searchChat = document.getElementById("searchChat")
 
     if (chatFile) {
@@ -823,7 +835,8 @@ function renderConversations() {
 
     if (!container || !searchInput) return
 
-    const search = searchInput.value.toLowerCase().trim()
+    // const search = searchInput.value.toLowerCase().trim()
+    const search = normalizeStr(searchInput.value.trim());
 
     const numbers = Object.keys(conversationsCache)
 
@@ -1114,7 +1127,8 @@ let isPolling = false
 let notifiedMessages = new Set()
 
 async function pollingLoop() {
-    if (!messagesPageActive || !currentSession) {
+    // REMOVIDO: messagesPageActive daqui para o polling rodar em segundo plano
+    if (!currentSession) {
         setTimeout(pollingLoop, 4000)
         return
     }
@@ -1132,50 +1146,56 @@ async function pollingLoop() {
         const messages = res.data?.data || []
 
         messages.forEach(m => {
-            const number = getContactNumber(m)
-            if (!number) return
+            const number = getContactNumber(m);
+            if (!number) return;
 
-            if (!conversationsCache[number]) conversationsCache[number] = []
-            if (!conversationsCache[number]._ids) conversationsCache[number]._ids = new Set()
+            if (!conversationsCache[number]) conversationsCache[number] = [];
+            if (!conversationsCache[number]._ids) conversationsCache[number]._ids = new Set();
 
-            // Evita duplicadas
-            if (conversationsCache[number]._ids.has(m.id)) return
+            if (conversationsCache[number]._ids.has(m.id)) return;
 
-            conversationsCache[number]._ids.add(m.id)
-            conversationsCache[number].push(m)
-            hasNewMessage = true
+            conversationsCache[number]._ids.add(m.id);
+            conversationsCache[number].push(m);
+            hasNewMessage = true;
 
-            const lastSeen = lastSeenTimestamp[number] || 0
-            const msgTime = new Date(m.timestamp).getTime()
-            const isOpenChat = number === currentChatNumber
+            const lastSeen = lastSeenTimestamp[number] || 0;
+            const msgTime = new Date(m.timestamp).getTime();
 
-            // Notificação
+            // Verifica se o chat está aberto E se a tela de mensagens é a que está visível
+            const isChatCurrentlyVisible = messagesPageActive && (number === currentChatNumber);
+
+            // 🔊 Lógica de Som e Notificação
             if (m.direction === "received" && msgTime > lastSeen && !notifiedMessages.has(m.id)) {
-                notifiedMessages.add(m.id)
-                const preview = m.body && m.body !== '[Mídia recebida]' ? m.body : "📎 Mídia"
-                showNotification(preview, number)
-                saveState()
+                notifiedMessages.add(m.id);
+                const preview = m.body && m.body !== '[Mídia recebida]' ? m.body : "📎 Mídia";
+
+                // Passamos o number para a função decidir se toca o som
+                showNotification(preview, number);
             }
 
-            // Contador não lidas
+            // 🔢 Contador de Mensagens Não Lidas (atualiza mesmo em outra aba)
             if (m.direction === "received" && msgTime > lastSeen) {
-                if (!isOpenChat) {
-                    unreadCounter[number] = (unreadCounter[number] || 0) + 1
+                if (!isChatCurrentlyVisible) {
+                    unreadCounter[number] = (unreadCounter[number] || 0) + 1;
                 } else {
-                    lastSeenTimestamp[number] = msgTime
+                    lastSeenTimestamp[number] = msgTime;
                 }
-                saveState()
+                saveState();
             }
-        })
+        });
 
         if (hasNewMessage) {
+            // Ordena o cache
             Object.keys(conversationsCache).forEach(number => {
                 conversationsCache[number].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp))
-            })
+            });
 
-            renderConversations()
-            if (currentChatNumber && conversationsCache[currentChatNumber]) {
-                renderChat(conversationsCache[currentChatNumber])
+            // SÓ RENDERIZA se a página de mensagens estiver ativa no projeto
+            if (messagesPageActive) {
+                renderConversations();
+                if (currentChatNumber && conversationsCache[currentChatNumber]) {
+                    renderChat(conversationsCache[currentChatNumber]);
+                }
             }
         }
 
@@ -1186,6 +1206,7 @@ async function pollingLoop() {
         setTimeout(pollingLoop, 4000)
     }
 }
+
 
 pollingLoop()
 

@@ -376,7 +376,7 @@ body {
 ============================== */
 .chat-layout {
     display: flex;
-    height: calc(100vh - 120px);
+    height: calc(100vh - 180px);
     overflow: hidden;
     background: var(--bg-card);
     border-radius: 8px;
@@ -514,7 +514,7 @@ body {
         position: fixed;
         top: 0;
         left: -100%;
-        width: 85%;
+        width: 50%;
         height: 100%;
         z-index: 9999;
         box-shadow: 2px 0 10px rgba(0, 0, 0, 0.3);

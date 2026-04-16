@@ -3,7 +3,7 @@ function dashboardPage() {
     const role = localStorage.getItem("role")
 
     return `
-        <h1>Dashboard</h1>
+        <h2 style="margin-top: 2px;">Dashboard</h2>
 
         <div id="dashboardLoading">Carregando métricas...</div>
 

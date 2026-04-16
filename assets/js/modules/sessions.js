@@ -24,7 +24,7 @@ function setupSocketListeners() {
 function sessionsPage() {
     setupSocketListeners();
     return `
-        <h1>Conexões WhatsApp</h1>
+        <h2 style="margin-top: 2px;">Conexões WhatsApp</h2>
 
         <div class="sessions-view">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">

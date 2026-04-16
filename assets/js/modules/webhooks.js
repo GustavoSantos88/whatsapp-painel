@@ -9,7 +9,7 @@ function webhooksPage() {
     }, 50);
 
     return `
-        <h1>Gerenciar Webhooks</h1>
+        <h2 style="margin-top: 2px;">Gerenciar Webhooks</h2>
 
         <div class="webhook-form-card">
             <h3>Configurar Novo Webhook</h3>
