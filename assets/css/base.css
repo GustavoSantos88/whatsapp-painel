@@ -80,6 +80,28 @@ body {
 }
 
 /* ==============================
+   PÁGINAS (CABEÇALHO)
+============================== */
+.page-header {
+    margin-bottom: 1.75rem;
+}
+
+.page-title {
+    margin: 0 0 0.35rem;
+    font-size: clamp(1.35rem, 2.5vw, 1.6rem);
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    color: var(--text-main);
+}
+
+.page-lead {
+    margin: 0;
+    font-size: 0.9375rem;
+    color: var(--text-muted);
+    max-width: 42rem;
+}
+
+/* ==============================
    HEADER MOBILE
 ============================== */
 .main-header {

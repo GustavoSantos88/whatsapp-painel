@@ -7,16 +7,21 @@ function changePasswordPage() {
     const role = localStorage.getItem("role");
 
     return `
-        <h2 style="margin-top: 2px;">Alterar Senha</h2>
-
         <div class="admin-page">          
 
+        <header class="page-header">
+                <h2 class="page-title">Alterar senha</h2>
+                <p class="page-lead">${role === 'admin'
+            ? 'Defina uma nova senha para a sua conta de administrador.'
+            : 'Informe a senha atual e a nova senha para continuar.'}</p>
+            </header>
+            
             <div class="change-password-card card" style="max-width: 400px; display: flex; flex-direction: column; gap: 10px;">
-                
-                <input type="${role === 'user' ? `password` : 'hidden'}" id="oldPassword" placeholder="Senha atual" class="input-field" required>
+                                
+                <input type="${role === 'user' ? `password` : 'hidden'}" id="oldPassword" placeholder="Senha atual" class="input-field" ${role === 'user' ? 'autocomplete="current-password"' : ''}>
                  
-                <input type="password" id="newPassword" placeholder="Nova senha" class="input-field" required>
-                <input type="password" id="confirmPassword" placeholder="Confirmar nova senha" class="input-field" required>
+                <input type="password" id="newPassword" placeholder="Nova senha" class="input-field" required autocomplete="new-password">
+                <input type="password" id="confirmPassword" placeholder="Confirmar nova senha" class="input-field" required autocomplete="new-password">
 
                 <div class="modal-actions" style="justify-content: flex-end;">
                     <button class="danger-btn" onclick="clearChangePasswordForm()">Cancelar</button>

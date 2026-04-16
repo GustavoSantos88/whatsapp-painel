@@ -564,7 +564,10 @@ function messagesPage() {
     setTimeout(initMessagesPage, 50)
 
     return `
-    <h2 style="margin-top: 2px;">Mensagem</h2>
+    <header class="page-header">
+        <h2 class="page-title">Mensagens</h2>
+        <p class="page-lead">Escolha a sessão, abra uma conversa e responda em tempo real.</p>
+    </header>
 
     <div class="chat-layout">
 
@@ -646,6 +649,7 @@ function destroyMessagesPage() {
 async function initMessagesPage() {
 
     loadState()  // 🔥 Carrega estado salvo
+    pollingLoop()
 
     if (!document.getElementById("msgSession")) return
 
@@ -991,7 +995,6 @@ function formatMessageText(text) {
         .replace(/\n/g, "<br>")
 }
 
-
 // Válida o dia da conversa
 function getDayLabel(timestamp) {
 
@@ -1231,8 +1234,6 @@ async function pollingLoop() {
     }
 }
 
-
-pollingLoop()
 
 /* =========================
    ENVIAR MENSAGEM

@@ -9,7 +9,10 @@ function webhooksPage() {
     }, 50);
 
     return `
-        <h2 style="margin-top: 2px;">Gerenciar Webhooks</h2>
+        <header class="page-header">
+            <h2 class="page-title">Webhooks</h2>
+            <p class="page-lead">Encaminhe eventos recebidos para o seu sistema via URL configurável por sessão.</p>
+        </header>
 
         <div class="webhook-form-card">
             <h3>Configurar Novo Webhook</h3>

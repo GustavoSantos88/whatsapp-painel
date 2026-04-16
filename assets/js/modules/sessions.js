@@ -24,7 +24,10 @@ function setupSocketListeners() {
 function sessionsPage() {
     setupSocketListeners();
     return `
-        <h2 style="margin-top: 2px;">Conexões WhatsApp</h2>
+        <header class="page-header">
+            <h2 class="page-title">Conexões WhatsApp</h2>
+            <p class="page-lead">Gerencie instâncias, escaneie o QR Code e acompanhe o status de cada conexão.</p>
+        </header>
 
         <div class="sessions-view">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">

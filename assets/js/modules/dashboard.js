@@ -2,8 +2,11 @@ function dashboardPage() {
 
     const role = localStorage.getItem("role")
 
-    return `
-        <h2 style="margin-top: 2px;">Dashboard</h2>
+    return `        
+        <header class="page-header">
+            <h2 class="page-title">Dashboard</h2>
+            <p class="page-lead">Visão geral das sessões, mensagens e uso da conta.</p>
+        </header>
 
         <div id="dashboardLoading">Carregando métricas...</div>
 

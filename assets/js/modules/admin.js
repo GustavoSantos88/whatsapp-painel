@@ -12,10 +12,13 @@ function adminPage() {
     return `
         <div class="admin-page">
 
-            <div class="admin-header">
-                <h2 style="margin-top: 2px;"padden>Painel Admin</h2>
-                <button class="primary-btn" onclick="openUserModal()">+ Novo Usuário</button>
-            </div>
+            <header class="page-header admin-header">
+                <div>
+                    <h2 class="page-title">Administração</h2>
+                    <p class="page-lead">Usuários, planos e permissões do painel.</p>
+                </div>
+                <button type="button" class="primary-btn" style="margin-bottom:0;" onclick="openUserModal()">+ Novo usuário</button>
+            </header>
 
             <input 
                 type="text" 
