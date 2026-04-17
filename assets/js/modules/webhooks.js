@@ -103,7 +103,8 @@ async function loadWebhooks() {
 
         list.innerHTML = webhooks.map(renderWebhookCard).join("");
     } catch (err) {
-        loading.innerHTML = "<p style='color:red;'>Erro ao carregar lista de webhooks.</p>";
+        loading.innerHTML = "<p style='color:red;'>.</p>";
+        toast('Erro ao carregar lista de webhooks', 'error')
     }
 }
 
@@ -140,7 +141,7 @@ async function createWebhook() {
     const url = urlInput.value;
 
     if (!sessionId || !url) {
-        alert("Preencha a URL e certifique-se de que há uma sessão selecionada.");
+        toast('Preencha a URL e certifique-se de que há uma sessão selecionada.', 'error')
         return;
     }
 
@@ -153,11 +154,12 @@ async function createWebhook() {
 
         if (res.data && res.data.id) {
             alert("Webhook criado com sucesso!");
+            toast('Webhook criado com sucesso!', 'success')
             urlInput.value = "";
             loadWebhooks();
         }
     } catch (err) {
-        alert("Erro: " + (err.response?.data?.error || "Falha na conexão"));
+        toast("Erro: " + (err.response?.data?.error || "Falha na conexão"), 'error')
     }
 }
 
@@ -167,6 +169,6 @@ async function deleteWebhook(id) {
         await axios.delete(CONFIG.SOCKET_URL + "/webhookEndpoints/" + id);
         loadWebhooks();
     } catch (err) {
-        alert("Erro ao excluir webhook.");
+        toast('Erro ao excluir webhook', 'error')
     }
 }

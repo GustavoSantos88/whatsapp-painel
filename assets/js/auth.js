@@ -6,11 +6,16 @@ function login() {
         .then(res => {
 
             if (!res.data.success) {
-                alert("Login inválido")
+                toast('Login inválido', 'error')
                 return
             }
 
             const userData = res.data.data
+
+            if (!userData.token) {
+                toast('Resposta de login inválida: token ausente.', 'error')
+                return
+            }
 
             localStorage.setItem("token", userData.role === 'user' ? userData.token : 'A3f5j72f9lkh7')
             localStorage.setItem("role", userData.role)
@@ -20,21 +25,20 @@ function login() {
 
             window.location.href = "app.html"
         })
-        .catch(err => {
+        .catch((err) => {
             const errorMsg = err.response?.data?.error
 
             if (err.response?.status === 403) {
-                alert(errorMsg || "Seu acesso expirou")
+                toast(errorMsg || 'Seu acesso expirou', 'error')
                 return
             }
 
             if (err.response?.status === 401) {
-                alert("Email ou senha inválidos")
+                toast('Email ou senha inválidos', 'error')
                 return
             }
 
-            console.log(err.response?.data)
-            alert(errorMsg || "Erro ao fazer login")
+            toast(errorMsg || 'Erro ao fazer login', 'error')
         })
 }
 
@@ -89,33 +93,43 @@ document.addEventListener("DOMContentLoaded", function () {
 });
 
 function validarCampos() {
-    const email = document.getElementById("email");
-    const senha = document.getElementById("password");
+    const email = document.getElementById('email')
+    const senha = document.getElementById('password')
 
-    // Só continua se os elementos existirem
     if (!email || !senha) {
-        // Não está na página de login, ignora
-        return;
+        return
     }
 
-    // Verifica se o email está preenchido e válido
     if (!email.value) {
-        alert("Por favor, preencha o email.");
-        email.focus();
-        return;
-    } else if (!email.checkValidity()) {
-        alert("Digite um email válido.");
-        email.focus();
-        return;
+        toast('Por favor, preencha o email.', 'error')
+        email.focus()
+        return
+    }
+    if (!email.checkValidity()) {
+        toast('Digite um email válido.', 'error')
+        email.focus()
+        return
     }
 
-    // Verifica se a senha está preenchida
     if (!senha.value) {
-        alert("Por favor, preencha a senha.");
-        senha.focus();
-        return;
+        toast('Por favor, preencha a senha.', 'error')
+        senha.focus()
+        return
     }
 
-    // Se tudo estiver correto, chama login()
-    login();
+    login()
 }
+
+axios.interceptors.response.use(
+    (response) => response,
+    (error) => {
+        if (error.response?.status === 401) {
+            const onLoginPage = document.getElementById('email')
+            if (!onLoginPage) {
+                logout()
+            }
+        }
+        return Promise.reject(error)
+    },
+)
+

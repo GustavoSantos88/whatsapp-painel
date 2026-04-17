@@ -167,7 +167,7 @@ async function createSession() {
         const res = await axios.post(`${CONFIG.API_URL}/sessions/connect`, {});
         if (res.data.success) await loadSessions();
     } catch (err) {
-        alert("Erro ao criar. Verifique o limite de sessões.");
+        toast('Erro ao criar, Verifique o limite de sessões.', 'error')
     } finally {
         btn.disabled = false;
         btn.innerText = "+ Nova Instância";
@@ -180,5 +180,7 @@ async function deleteSession(id) {
         await axios.delete(`${CONFIG.API_URL}/sessions/${id}`);
         delete window.qrCache[id];
         loadSessions();
-    } catch (err) { alert("Erro ao deletar."); }
+    } catch (err) {
+        toast('Erro ao deletar sessão', 'error')
+    }
 }

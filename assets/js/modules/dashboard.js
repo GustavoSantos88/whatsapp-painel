@@ -72,7 +72,7 @@ async function loadDashboardData() {
 
         const res = await axios.get(CONFIG.API_URL + endpoint)
 
-        console.log("Resposta API:", res.data)
+        // console.log("Resposta API:", res.data)
 
         if (!res.data.success) {
             throw new Error("Erro na API")
@@ -128,6 +128,8 @@ async function loadDashboardData() {
             "Erro ao carregar métricas"
 
         console.log("Erro dashboard:", err)
+
+        toast('Erro ao carregar métricas', 'error')
     }
 }
 

@@ -1,16 +1,17 @@
 <!DOCTYPE html>
-<html>
+<html lang="pt-BR">
 
 <head>
     <meta charset="UTF-8">
-    <!-- Responsividade -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <!-- Favicon -->
-    <link rel="icon" type="image/png" href="./assets/images/logo.png">
-
-    <!-- Opcional: favicon para navegadores antigos -->
-    <link rel="shortcut icon" href="./assets/images/logo.png" type="image/png">
+    <meta name="description" content="Acesso ao painel de gestão WhatsApp">
+    <meta name="robots" content="noindex, nofollow">
+    <meta name="theme-color" content="#6366f1">
+    <link rel="icon" href="./assets/images/logo.png" type="image/png">
     <title>Login</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="assets/css/base.css">
 </head>
 
@@ -40,7 +41,8 @@
 
         const scripts = [
             "assets/js/config.js",
-            "assets/js/auth.js"
+            "assets/js/toast.js",
+            "assets/js/auth.js",
         ];
 
         scripts.forEach(src => {

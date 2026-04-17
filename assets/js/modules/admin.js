@@ -236,12 +236,12 @@ async function saveUser() {
     const password = "123456";
 
     if (!name || !email || !role || !plan || !status) {
-        alert('Preencha todos os campos')
+        toast('Por favor, preencha todos os campos.', 'error')
         return
     }
 
     if (!email.includes('@')) {
-        alert('Email inválido')
+        toast('Por favor, e-mail inválido.', 'error')
         return
     }
 
@@ -259,6 +259,7 @@ async function saveUser() {
 
     } catch (err) {
         console.error('Erro ao salvar', err)
+        toast('Erro ao salvar.', 'error')
     }
 }
 
@@ -270,5 +271,6 @@ async function deleteUser(id) {
         loadUsers()
     } catch (err) {
         console.error('Erro ao deletar', err)
+        toast('Erro ao deletar.', 'error')
     }
 }

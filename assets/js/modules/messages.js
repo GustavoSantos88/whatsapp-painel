@@ -52,7 +52,6 @@ function showNotification(message, number) {
     }
 }
 
-
 function playNotificationSound() {
 
     notificationSound.currentTime = 0
@@ -98,20 +97,15 @@ function normalizeNumber(number) {
         .replace('@lid', '')
         .replace(/\D/g, '')
 
-    if (number.length < 10) return null // 🔥 evita lixo
-
-    if (!number.startsWith("55")) {
-        number = "55" + number
+    if (number.length < 10) {
+        throw new Error('Número inválido')
     }
 
-    const ddd = number.substring(2, 4)
-    let phone = number.substring(4)
-
-    if (phone.length === 8) {
-        phone = "9" + phone
+    if (!number.startsWith('55')) {
+        number = '55' + number
     }
 
-    return "55" + ddd + phone
+    return number
 }
 
 /* =========================
@@ -227,6 +221,7 @@ function isValidContact(c) {
     return true
 }
 
+const renderedContacts = new Set();
 const normalizeStr = (s) => s ? s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase() : "";
 // Busca contatos via API (somente quando usuário dispara)
 async function fetchContacts(reset = false) {
@@ -239,6 +234,7 @@ async function fetchContacts(reset = false) {
     if (reset) {
         contactsPage = 1;
         contactsEnd = false;
+        renderedContacts.clear(); // 🔥 limpa duplicados
         const list = document.getElementById("contactsList");
         if (list) list.innerHTML = "<div style='padding:10px'>Buscando...</div>";
     }
@@ -264,8 +260,22 @@ async function fetchContacts(reset = false) {
             if (!isValidContact(c)) return false;
 
             const nameFromApi = normalizeStr(c.name);
-            // Se o nome da API normalizado contém sua busca normalizada
-            return nameFromApi.indexOf(searchTermNormalized) !== -1;
+            const matchesSearch = nameFromApi.includes(searchTermNormalized);
+
+            if (!matchesSearch) return false;
+
+            // 🔥 chave única do contato (prioridade)
+            const uniqueKey = c.id || c.number;
+
+            if (!uniqueKey) return false;
+
+            if (renderedContacts.has(uniqueKey)) {
+                return false; // 🚫 evita duplicado
+            }
+
+            renderedContacts.add(uniqueKey); // ✅ marca como já renderizado
+
+            return true;
         });
 
         if (data.length < 20) contactsEnd = true;
@@ -322,7 +332,7 @@ function openContacts(event) {
     if (event) event.stopPropagation() // 🔥 ESSENCIAL
 
     if (!currentSessionId) {
-        alert("Selecione uma sessão primeiro")
+        toast('Selecione uma sessão primeiro.', 'success')
         return
     }
 
@@ -406,7 +416,6 @@ function triggerContactSearch() {
     contactsEnd = false;
     fetchContacts(true); // O 'true' garante que a lista antiga seja apagada
 }
-
 
 // Seleciona contato e abre conversa
 function selectContact(number, name) {
@@ -665,7 +674,7 @@ async function initMessagesPage() {
 
     //         // opcional: avisar usuário
     //         setTimeout(() => {
-    //             alert("Ative as notificações no navegador para receber alertas de mensagens.")
+    //             toast('Ative as notificações no navegador para receber alertas de mensagens.', 'error')
     //         }, 2000)
     //     }
 
@@ -1245,7 +1254,7 @@ async function sendChatMessage() {
     const textInput = document.getElementById("chatText")
 
     if (!currentSession || !currentChatNumber) {
-        alert("Selecione uma conversa")
+        toast('Selecion uma conversa.', 'error')
         return
     }
 
@@ -1288,11 +1297,8 @@ async function sendChatMessage() {
         }
 
     } catch (err) {
-
         console.error("Erro ao enviar mensagem", err)
-
-        alert("Erro ao enviar mensagem")
-
+        toast('Erro ao enviar mensagem.', 'error')
     }
 
     sendingMessage = false
