@@ -192,7 +192,7 @@ function getLastMessagePreview(messages) {
         // MÍDIA
         else if (m.has_media) {
 
-            const ext = m.file_name?.split('.').pop()?.toLowerCase()
+            const ext = m.media_name?.split('.').pop()?.toLowerCase()
 
             if (["jpg", "jpeg", "png", "webp"].includes(ext)) texto = "📷 Foto"
             else if (["mp4", "webm"].includes(ext)) texto = "🎥 Vídeo"
@@ -813,16 +813,15 @@ function getContactNumber(m) {
     const from = normalizeNumber(m.from)
     const to = normalizeNumber(m.contact_number)
 
-    // regra: o contato é sempre o número diferente entre os dois
-    if (!from) return to
-    if (!to) return from
+    const session = normalizeNumber(currentInstanceNumber)
 
-    // se forem diferentes, pega o que NÃO é a instância (direction ajuda)
-    if (m.direction === "received") {
-        return from
-    }
+    if (!from && !to) return null
 
-    return to
+    // sempre retorna o número que NÃO é o da sessão
+    if (from && from !== session) return from
+    if (to && to !== session) return to
+
+    return from || to
 }
 
 function saveState() {
@@ -1066,19 +1065,16 @@ function renderChat(messages) {
             if (m.media_path.startsWith("blob:")) {
 
                 url = m.media_path
-                fileName = m.file_name || "arquivo"
+                fileName = m.media_name || "arquivo"
 
             } else {
 
-                if (m.media_path) {
-                    let path = m.media_path.replace(/^\/+/, "")
-                    url = CONFIG.SOCKET_URL + `/uploads/${m.session_id}/` + path
-                    fileName = path.split('/').pop()
-                }
+                let path = m.media_path.replace(/^\/+/, "")
+                url = CONFIG.SOCKET_URL + '/' + path
+                fileName = m.media_name || path.split('/').pop()
             }
 
             media = renderMediaMessage(url, fileName)
-
         }
 
         return `
