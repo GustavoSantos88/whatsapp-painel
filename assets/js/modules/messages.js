@@ -92,14 +92,12 @@ function normalizeNumber(number) {
     if (!number) return null
 
     number = number
-        .replace('@c.us', '')
-        .replace('@s.whatsapp.net', '')
-        .replace('@lid', '')
+        .toString()
+        .split('@')[0]   // remove sufixo WA
+        .split(':')[0]   // remove multi-device
         .replace(/\D/g, '')
 
-    if (number.length < 10) {
-        throw new Error('Número inválido')
-    }
+    if (number.length < 10) return null
 
     if (!number.startsWith('55')) {
         number = '55' + number
@@ -810,18 +808,26 @@ async function loadConversations() {
 
 function getContactNumber(m) {
 
-    const from = normalizeNumber(m.from)
-    const to = normalizeNumber(m.contact_number)
+    const instance = normalizeNumber(currentInstanceNumber)
 
-    const session = normalizeNumber(currentInstanceNumber)
+    // 🔥 pega a fonte mais confiável possível
+    let raw =
+        m.remote_jid ||
+        m.chat_id ||
+        m.from ||
+        m.to ||
+        m.contact_number
 
-    if (!from && !to) return null
+    if (!raw) return null
 
-    // sempre retorna o número que NÃO é o da sessão
-    if (from && from !== session) return from
-    if (to && to !== session) return to
+    const number = normalizeNumber(raw)
 
-    return from || to
+    if (!number) return null
+
+    // 🔥 evita criar conversa com seu próprio número
+    if (number === instance) return null
+
+    return number
 }
 
 function saveState() {
@@ -1238,7 +1244,6 @@ async function pollingLoop() {
         setTimeout(pollingLoop, 4000)
     }
 }
-
 
 /* =========================
    ENVIAR MENSAGEM
