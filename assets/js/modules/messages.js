@@ -769,8 +769,11 @@ async function loadMessageSessions() {
 ========================= */
 async function loadConversations() {
 
-    if (!currentSession) return
+     if (!currentSession) return
 
+    // 🔥 limpa cache antigo (ESSENCIAL)
+    conversationsCache = {}
+    
     const res = await axios.get(`${CONFIG.API_URL}/${currentSession}?limit=200`)
     const messages = res.data.data || []
 
