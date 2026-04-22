@@ -769,11 +769,11 @@ async function loadMessageSessions() {
 ========================= */
 async function loadConversations() {
 
-     if (!currentSession) return
+    if (!currentSession) return
 
     // 🔥 limpa cache antigo (ESSENCIAL)
     conversationsCache = {}
-    
+
     const res = await axios.get(`${CONFIG.API_URL}/${currentSession}?limit=200`)
     const messages = res.data.data || []
 
@@ -813,21 +813,24 @@ function getContactNumber(m) {
 
     const instance = normalizeNumber(currentInstanceNumber)
 
-    // 🔥 pega a fonte mais confiável possível
-    let raw =
-        m.remote_jid ||
-        m.chat_id ||
-        m.from ||
-        m.to ||
-        m.contact_number
+    if (!instance) return null
 
-    if (!raw) return null
+    let number = null
 
-    const number = normalizeNumber(raw)
+    // 🔥 PRIORIDADE ABSOLUTA DE DADOS CORRETOS
+    if (m.direction === "sent") {
+        number = m.contact_number || m.to || m.remote_jid
+    } else {
+        number = m.from || m.contact_number || m.remote_jid
+    }
 
     if (!number) return null
 
-    // 🔥 evita criar conversa com seu próprio número
+    number = normalizeNumber(number)
+
+    if (!number) return null
+
+    // evita loop com a própria instância
     if (number === instance) return null
 
     return number
@@ -1086,28 +1089,30 @@ function renderChat(messages) {
             media = renderMediaMessage(url, fileName)
         }
 
+        const hasText = m.body && m.body.trim() !== ""
+        const hasMedia = m.has_media && media
+
         return `
-                ${daySeparator ? `
-                    <div style="text-align:center;">
-                        ${daySeparator}
-                    </div>
-                ` : ''}
+    ${daySeparator ? `
+        <div style="text-align:center;">
+            ${daySeparator}
+        </div>
+    ` : ''}
 
-               ${((m.body && m.body.trim() !== "") && m.body !== '[Mídia recebida]') || (m.has_media && media) ? `
-                    <div class="chat-message ${type}">
-                        <div class="chat-bubble">
-                            ${media}                            
-                            
-                            ${formatMessageText(m.body)}
+    ${(hasText || hasMedia) ? `
+        <div class="chat-message ${type}">
+            <div class="chat-bubble">
+                ${media || ""}
 
-                            <div class="msg-meta" style="text-align: right;">
-                                <span>${formatTime(m.timestamp)}</span>
-                                <span>${m.status || ""}</span>
-                            </div>
-                        </div>
-                    </div>
-                ` : ''
-            }
+                ${hasText ? formatMessageText(m.body) : ""}
+
+                <div class="msg-meta" style="text-align: right;">
+                    <span>${formatTime(m.timestamp)}</span>
+                    <span>${m.status || ""}</span>
+                </div>
+            </div>
+        </div>
+    ` : ""}
 `
 
     }).join("")
@@ -1193,10 +1198,21 @@ async function pollingLoop() {
             if (!conversationsCache[number]) conversationsCache[number] = [];
             if (!conversationsCache[number]._ids) conversationsCache[number]._ids = new Set();
 
-            if (conversationsCache[number]._ids.has(m.id)) return;
+            const msgId = m.message_id || m.id
 
-            conversationsCache[number]._ids.add(m.id);
+            if (!msgId) return
+
+            if (conversationsCache[number]._ids.has(msgId)) return
+
+            conversationsCache[number]._ids.add(msgId)
+
+            // conversationsCache[number]._ids.add(m.id);
             conversationsCache[number].push(m);
+
+            conversationsCache[number].sort(
+                (a, b) => new Date(a.timestamp) - new Date(b.timestamp)
+            )
+
             hasNewMessage = true;
 
             const lastSeen = lastSeenTimestamp[number] || 0;
