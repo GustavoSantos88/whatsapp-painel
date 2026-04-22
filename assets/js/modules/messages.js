@@ -92,12 +92,14 @@ function normalizeNumber(number) {
     if (!number) return null
 
     number = number
-        .toString()
-        .split('@')[0]   // remove sufixo WA
-        .split(':')[0]   // remove multi-device
+        .replace('@c.us', '')
+        .replace('@s.whatsapp.net', '')
+        .replace('@lid', '')
         .replace(/\D/g, '')
 
-    if (number.length < 10) return null
+    if (number.length < 10) {
+        throw new Error('Número inválido')
+    }
 
     if (!number.startsWith('55')) {
         number = '55' + number
@@ -190,7 +192,7 @@ function getLastMessagePreview(messages) {
         // MÍDIA
         else if (m.has_media) {
 
-            const ext = m.media_name?.split('.').pop()?.toLowerCase()
+            const ext = m.file_name?.split('.').pop()?.toLowerCase()
 
             if (["jpg", "jpeg", "png", "webp"].includes(ext)) texto = "📷 Foto"
             else if (["mp4", "webm"].includes(ext)) texto = "🎥 Vídeo"
@@ -771,9 +773,6 @@ async function loadConversations() {
 
     if (!currentSession) return
 
-    // 🔥 limpa cache antigo (ESSENCIAL)
-    conversationsCache = {}
-
     const res = await axios.get(`${CONFIG.API_URL}/${currentSession}?limit=200`)
     const messages = res.data.data || []
 
@@ -811,29 +810,19 @@ async function loadConversations() {
 
 function getContactNumber(m) {
 
-    const instance = normalizeNumber(currentInstanceNumber)
+    const from = normalizeNumber(m.from)
+    const to = normalizeNumber(m.contact_number)
 
-    if (!instance) return null
+    // regra: o contato é sempre o número diferente entre os dois
+    if (!from) return to
+    if (!to) return from
 
-    let number = null
-
-    // 🔥 PRIORIDADE ABSOLUTA DE DADOS CORRETOS
-    if (m.direction === "sent") {
-        number = m.contact_number || m.to || m.remote_jid
-    } else {
-        number = m.from || m.contact_number || m.remote_jid
+    // se forem diferentes, pega o que NÃO é a instância (direction ajuda)
+    if (m.direction === "received") {
+        return from
     }
 
-    if (!number) return null
-
-    number = normalizeNumber(number)
-
-    if (!number) return null
-
-    // evita loop com a própria instância
-    if (number === instance) return null
-
-    return number
+    return to
 }
 
 function saveState() {
@@ -1077,42 +1066,43 @@ function renderChat(messages) {
             if (m.media_path.startsWith("blob:")) {
 
                 url = m.media_path
-                fileName = m.media_name || "arquivo"
+                fileName = m.file_name || "arquivo"
 
             } else {
 
-                let path = m.media_path.replace(/^\/+/, "")
-                url = CONFIG.SOCKET_URL + '/' + path
-                fileName = m.media_name || path.split('/').pop()
+                if (m.media_path) {
+                    let path = m.media_path.replace(/^\/+/, "")
+                    url = CONFIG.SOCKET_URL + `/uploads/${m.session_id}/` + path
+                    fileName = path.split('/').pop()
+                }
             }
 
             media = renderMediaMessage(url, fileName)
+
         }
 
-        const hasText = m.body && m.body.trim() !== ""
-        const hasMedia = m.has_media && media
-
         return `
-    ${daySeparator ? `
-        <div style="text-align:center;">
-            ${daySeparator}
-        </div>
-    ` : ''}
+                ${daySeparator ? `
+                    <div style="text-align:center;">
+                        ${daySeparator}
+                    </div>
+                ` : ''}
 
-    ${(hasText || hasMedia) ? `
-        <div class="chat-message ${type}">
-            <div class="chat-bubble">
-                ${media || ""}
+               ${((m.body && m.body.trim() !== "") && m.body !== '[Mídia recebida]') || (m.has_media && media) ? `
+                    <div class="chat-message ${type}">
+                        <div class="chat-bubble">
+                            ${media}                            
+                            
+                            ${formatMessageText(m.body)}
 
-                ${hasText ? formatMessageText(m.body) : ""}
-
-                <div class="msg-meta" style="text-align: right;">
-                    <span>${formatTime(m.timestamp)}</span>
-                    <span>${m.status || ""}</span>
-                </div>
-            </div>
-        </div>
-    ` : ""}
+                            <div class="msg-meta" style="text-align: right;">
+                                <span>${formatTime(m.timestamp)}</span>
+                                <span>${m.status || ""}</span>
+                            </div>
+                        </div>
+                    </div>
+                ` : ''
+            }
 `
 
     }).join("")
@@ -1198,21 +1188,10 @@ async function pollingLoop() {
             if (!conversationsCache[number]) conversationsCache[number] = [];
             if (!conversationsCache[number]._ids) conversationsCache[number]._ids = new Set();
 
-            const msgId = m.message_id || m.id
+            if (conversationsCache[number]._ids.has(m.id)) return;
 
-            if (!msgId) return
-
-            if (conversationsCache[number]._ids.has(msgId)) return
-
-            conversationsCache[number]._ids.add(msgId)
-
-            // conversationsCache[number]._ids.add(m.id);
+            conversationsCache[number]._ids.add(m.id);
             conversationsCache[number].push(m);
-
-            conversationsCache[number].sort(
-                (a, b) => new Date(a.timestamp) - new Date(b.timestamp)
-            )
-
             hasNewMessage = true;
 
             const lastSeen = lastSeenTimestamp[number] || 0;
@@ -1263,6 +1242,7 @@ async function pollingLoop() {
         setTimeout(pollingLoop, 4000)
     }
 }
+
 
 /* =========================
    ENVIAR MENSAGEM
