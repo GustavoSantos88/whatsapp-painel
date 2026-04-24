@@ -112,27 +112,57 @@ function normalizeNumber(number) {
    MEDIA RENDER
 ========================= */
 function renderMediaMessage(url, fileName) {
-    if (!url) return ""
-    const ext = fileName?.split('.').pop()?.toLowerCase()
+    if (!url) return "";
 
+    const parts = fileName.split('.');
+    const ext = parts.length > 1 ? parts.pop().toLowerCase() : "";
+
+    const mediaStyle = `max-width: 220px; width: 100%; height: auto; border-radius: 8px; display: block; margin: 5px 0;`;
+
+    // 🖼️ IMAGENS
     if (["jpg", "jpeg", "png", "gif", "webp"].includes(ext)) {
-        return `<img src="${url}" style="max-width:160px;border-radius:8px">`
+        return `<img src="${url}" style="${mediaStyle} cursor:pointer;" onclick="window.open('${url}', '_blank')">`;
     }
-    if (["mp4", "webm"].includes(ext)) {
-        return `<video controls width="160"><source src="${url}"></video>`
-    }
-    if (["mp3", "wav", "ogg"].includes(ext)) {
-        return `<audio controls src="${url}"></audio>`
-    }
-    if (ext === "pdf" || url.includes(".pdf") || url.startsWith("data:application/pdf")) {
+
+    // 🎥 VÍDEOS
+    if (["mp4", "webm", "ogg"].includes(ext)) {
+        // Só adiciona o tempo do preview se for uma URL da API (não blob local)
+        const videoSrc = (url.startsWith('http') && !url.includes('#t=')) ? `${url}#t=0.5` : url;
         return `
-        <div class="chat-pdf">
-            <iframe src="${url}" style="width:160px;height:160px;border:none;border-radius:8px;background:#fff;"></iframe>
-            <div style="margin-top:4px;font-size:10px">📄 ${fileName || "PDF"}</div>
-        </div>`
+            <video controls preload="metadata" style="${mediaStyle} background: #000;">
+                <source src="${videoSrc}" type="video/mp4">
+                <source src="${videoSrc}" type="video/webm">
+                Seu navegador não suporta vídeos.
+            </video>`;
     }
-    return `<a href="${url}" target="_blank">📎 ${fileName}</a>`
+
+    // 🎵 ÁUDIO (ESTILO WHATSAPP WEB)
+    if (["mp3", "wav", "ogg", "m4a", "oga", "opus"].includes(ext) || fileName.toLowerCase().includes("audio")) {
+        return `
+        <div class="audio-player-container">
+            <div class="audio-avatar">
+                <span>👤</span>
+                <div class="audio-mic-icon">🎙️</div>
+            </div>
+            <div style="flex: 1; display: flex; align-items: center; margin-left: 5px;">
+                <audio controls class="whatsapp-audio" style="width: 100%; height: 35px;">
+                    <source src="${url}" type="audio/ogg">
+                    <source src="${url}" type="audio/mpeg">
+                    <source src="${url}" type="audio/mp4">
+                    <source src="${url}" type="audio/webm">
+                </audio>
+            </div>
+        </div>`;
+    }
+
+    // 📄 DOCUMENTOS
+    return `
+        <a href="${url}" target="_blank" style="display:flex; align-items:center; gap:8px; padding:12px; background:#f8f9fa; border-radius:8px; text-decoration:none; color:#333; font-size:13px; border:1px solid #e9ecef; margin: 5px 0;">
+            <span style="font-size:18px;">📄</span>
+            <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 180px;">${fileName}</span>
+        </a>`;
 }
+
 
 /* =========================
    PREVIEW
@@ -175,39 +205,35 @@ function removeSingleMedia(index) {
 }
 
 function getLastMessagePreview(messages) {
-
-    if (!messages || !messages.length) return ""
+    if (!messages || !messages.length) return "";
 
     for (let i = messages.length - 1; i >= 0; i--) {
+        const m = messages[i];
+        let texto = "";
 
-        const m = messages[i]
-
-        let texto = ""
-
-        // TEXTO
-        if (m.body && m.body !== '[Mídia recebida]') {
-            texto = m.body
+        // 1. TEXTO (Ignora as tags padrão para forçar a detecção de ícone abaixo)
+        if (m.body && m.body !== '[Mídia recebida]' && m.body !== '[Mídia enviada]') {
+            texto = m.body;
         }
-
-        // MÍDIA
+        // 2. MÍDIA (Identifica pelo nome do arquivo salvo no banco)
         else if (m.has_media) {
+            // Usamos media_name pois é o que seu backend está salvando agora
+            const fileName = m.media_name || "";
+            const ext = fileName.split('.').pop().toLowerCase();
 
-            const ext = m.file_name?.split('.').pop()?.toLowerCase()
-
-            if (["jpg", "jpeg", "png", "webp"].includes(ext)) texto = "📷 Foto"
-            else if (["mp4", "webm"].includes(ext)) texto = "🎥 Vídeo"
-            else if (["mp3", "wav", "ogg"].includes(ext)) texto = "🎵 Áudio"
-            else if (ext === "pdf") texto = "📄 PDF"
-            else texto = "📎 Arquivo"
+            if (["jpg", "jpeg", "png", "webp", "gif"].includes(ext)) texto = "📷 Foto";
+            else if (["mp4", "webm", "ogg"].includes(ext)) texto = "🎥 Vídeo";
+            else if (["mp3", "wav", "ogg", "m4a", "oga", "opus"].includes(ext)) texto = "🎵 Áudio";
+            else if (ext === "pdf") texto = "📄 PDF";
+            else texto = "📎 Arquivo";
         }
 
-        // 👉 AQUI entra o "Você:"
         if (texto) {
-            return (m.direction === "sent" ? "Você: " : "") + texto
+            return (m.direction === "sent" ? "Você: " : "") + texto;
         }
     }
 
-    return ""
+    return "";
 }
 
 // Filtra contatos válidos (remove "Sem nome" e vazios)
@@ -971,6 +997,19 @@ function openChat(number) {
 function formatMessageText(text) {
     if (!text) return ""
 
+    // =============================================================
+    // BLOCO NOVO: ELIMINAR ETIQUETAS DO BACKEND
+    // =============================================================
+    const tagsParaIgnorar = [
+        '[Áudio]', '[Foto]', '[Vídeo]', '[Arquivo]',
+        '[Mídia recebida]', '[Mídia enviada]'
+    ];
+
+    if (tagsParaIgnorar.includes(text.trim())) {
+        return ""; // Retorna vazio para não sujar o balão de chat
+    }
+    // =============================================================
+
     const urlRegex = /(https?:\/\/[^\s]+)/g
     const videoExtensions = /\.(mp4|webm|ogg)$/i
 
@@ -980,10 +1019,8 @@ function formatMessageText(text) {
             // Limpa a URL de espaços ou quebras que venham junto
             const cleanUrl = url.trim().split('?')[0];
 
-
             // --- FACEBOOK ---
             if (url.includes("facebook.com")) {
-
                 return '<a href="' + url + '" target="_blank" rel="noopener noreferrer" style="color:#4da6ff; text-decoration:underline;">' + url + '</a>';
             }
 
@@ -1001,7 +1038,7 @@ function formatMessageText(text) {
             // Link padrão
             return '<a href="' + url + '" target="_blank" rel="noopener noreferrer" style="color:#4da6ff; text-decoration:underline;">' + url + '</a>';
         })
-        .replace(/\n/g, "<br>")
+        .replace(/\n/g, "<br>") // Quebra de linha
 }
 
 // Válida o dia da conversa
@@ -1035,87 +1072,106 @@ function getDayLabel(timestamp) {
    RENDER CHAT
 ========================= */
 function renderChat(messages) {
+    const container = document.getElementById("chatMessages");
+    if (!container) return;
 
-    const container = document.getElementById("chatMessages")
-    if (!container) return
+    messages.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
 
-    messages.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp))
-
-    let lastDay = null
+    let lastDay = null;
 
     container.innerHTML = messages.map(m => {
+        let dayLabel = getDayLabel(m.timestamp);
+        let daySeparator = (dayLabel !== lastDay) ? `<div class="msg-day">${dayLabel}</div>` : "";
+        if (daySeparator) lastDay = dayLabel;
 
-        let dayLabel = getDayLabel(m.timestamp)
+        const type = m.direction === "sent" ? "chat-sent" : "chat-received";
 
-        let daySeparator = ""
-
-        if (dayLabel !== lastDay) {
-            daySeparator = `<div class="msg-day"> ${dayLabel}</div>`;
-            lastDay = dayLabel
-        }
-
-        const type = m.direction === "sent" ? "chat-sent" : "chat-received"
-
-        let media = ""
+        let mediaHtml = "";
 
         if (m.has_media) {
-            let url = ""
-            let fileName = m.media_name || "arquivo"
-
-            // Se tiver path local (mensagens antigas ou flag de salvar ligada)
-            if (m.media_path) {
-                if (m.media_path.startsWith("blob:")) {
-                    url = m.media_path;
-                } else {
-                    let path = m.media_path.replace(/^\/+/, "");
-                    url = `${CONFIG.API_URL}/uploads/${m.session_id}/${path}`;
-                }
-            }
-            // LÓGICA NOVA: Se NÃO tiver path, busca direto da API (Real-time)
-            else {
-                url = `${CONFIG.API_URL}/media-viewer/${m.session_id}/${m.message_id}`;
-            }
-
-            media = renderMediaMessage(url, fileName);
+            const safeId = `media-${m.message_id.replace(/[^a-zA-Z0-9]/g, '')}`;
+            mediaHtml = `
+                    <div id="${safeId}" class="media-loader" style="width:160px; height:100px; background: var(--bg-card); border-radius:8px; display:flex; align-items:center; justify-content:center; border:1px dashed #ccc;">
+                        <span style="font-size:10px; color: var(--text-main);">⌛ Carregando...</span>
+                    </div>`;
         }
 
         return `
-                ${daySeparator ? `
-                    <div style="text-align:center;">
-                        ${daySeparator}
-                    </div>
-                ` : ''}
-
-               ${((m.body && m.body.trim() !== "") && m.body !== '[Mídia recebida]') || (m.has_media && media) ? `
-                    <div class="chat-message ${type}">
-                        <div class="chat-bubble">
-                            ${media}                            
-                            
-                            ${formatMessageText(m.body)}
-
-                            <div class="msg-meta" style="text-align: right;">
-                                <span>${formatTime(m.timestamp)}</span>
-                                <span>${m.status || ""}</span>
-                            </div>
+            ${daySeparator ? `<div style="text-align:center;">${daySeparator}</div>` : ''}
+            ${((m.body && m.body.trim() !== "") && m.body !== '[Mídia recebida]') || m.has_media ? `
+                <div class="chat-message ${type}">
+                    <div class="chat-bubble">
+                        ${mediaHtml}                            
+                        ${(m.body && m.body !== '[Mídia recebida]') ? `<div>${formatMessageText(m.body)}</div>` : ''}
+                        <div class="msg-meta" style="text-align: right;">
+                            <span>${formatTime(m.timestamp)}</span>
+                            <span>${m.status || ""}</span>
                         </div>
                     </div>
-                ` : ''
-            }
-`
+                </div>
+            ` : ''}
+        `;
+    }).join("");
 
-    }).join("")
+    // --- PARTE NOVA: Disparar o carregamento assíncrono das mídias ---
+    loadPendingMedias(messages);
 
-    const isNearBottom =
-        container.scrollHeight - container.scrollTop - container.clientHeight < 100
+    const isNearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 100;
+    if (isNearBottom) container.scrollTop = container.scrollHeight;
 
-    if (isNearBottom) {
-        container.scrollTop = container.scrollHeight
-    }
-
-    const chatText = document.getElementById("chatText")
-    chatText.focus()
-
+    const chatText = document.getElementById("chatText");
+    if (chatText) chatText.focus();
 }
+
+async function loadPendingMedias(messages) {
+    // Filtramos apenas mensagens que têm mídia mas não têm path local
+    const pending = messages.filter(m => m.has_media && !m.media_path);
+
+    for (const m of pending) {
+        const safeId = `media-${m.message_id.replace(/[^a-zA-Z0-9]/g, '')}`;
+        const element = document.getElementById(safeId);
+
+        // Se o elemento não existe ou já foi processado (não tem mais a classe loader)
+        if (!element || !element.classList.contains('media-loader')) continue;
+
+        try {
+            const ext = m.media_name?.split('.').pop()?.toLowerCase();
+
+            // 🎥 VÍDEO: Usa URL DIRETA para permitir Streaming/Preview
+            if (['mp4', 'webm', 'ogg'].includes(ext)) {
+                // Passamos o token na Query String para a rota direta
+                const directUrl = `${CONFIG.API_URL}/media-viewer/${m.session_id}/${m.message_id}`;
+                element.outerHTML = renderMediaMessage(directUrl, m.media_name);
+            }
+            // 🖼️/🎵 IMAGEM, ÁUDIO E OUTROS: Via Axios Blob
+            else {
+                const blobUrl = await getMediaBlobViaAxios(m.session_id, m.message_id);
+                if (blobUrl) {
+                    // CORREÇÃO: Apenas uma chamada ao renderMediaMessage
+                    element.outerHTML = renderMediaMessage(blobUrl, m.media_name || "arquivo");
+                } else {
+                    element.innerHTML = "<small style='color:red'>❌ Erro</small>";
+                }
+            }
+        } catch (err) {
+            console.error("Erro ao processar mídia pendente:", err);
+            element.innerHTML = "<small>⚠️ Indisponível</small>";
+        }
+    }
+}
+
+async function getMediaBlobViaAxios(sessionId, messageId) {
+    try {
+        const response = await axios.get(`${CONFIG.API_URL}/media-viewer/${sessionId}/${messageId}`, {
+            responseType: 'blob'
+        });
+        return URL.createObjectURL(response.data);
+    } catch (error) {
+        console.error("Erro ao buscar binário da mídia:", error);
+        return null;
+    }
+}
+
 
 /* =========================
    FILE
@@ -1240,7 +1296,6 @@ async function pollingLoop() {
         setTimeout(pollingLoop, 4000)
     }
 }
-
 
 /* =========================
    ENVIAR MENSAGEM

@@ -490,6 +490,110 @@ body {
     color: var(--text-main);
 }
 
+/* =============================================================
+   MÍDIAS (IMAGEM E VÍDEO) - PROPORCIONAL E RESPONSIVO
+   ============================================================= */
+.msg-media-wrapper img,
+.msg-media-wrapper video {
+    max-width: 100%;
+    width: auto;
+    height: auto;
+    max-height: 350px;
+    /* Evita que imagens verticais fiquem gigantes */
+    border-radius: 8px;
+    display: block;
+    margin: 5px 0;
+    object-fit: contain;
+    border: 1px solid var(--border-color);
+}
+
+/* =============================================================
+   AUDIO ESTILO WHATSAPP (USANDO SUAS VARIÁVEIS)
+   ============================================================= */
+.audio-player-container {
+    display: flex;
+    align-items: center;    
+    margin: 5px 0;
+    padding: 10px;
+    min-width: 10px;
+    max-width: 100%;
+    background: var(--bg-card);
+    /* Usa a cor do card do seu tema */
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    gap: 12px;
+}
+
+.audio-avatar {
+    width: 48px;
+    height: 48px;
+    min-width: 48px;
+    min-height: 48px;
+    border-radius: 50%;
+    border: 1px solid var(--border-color);
+    /* Cor de fundo do círculo da "foto" */
+    background: var(--input-bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    flex-shrink: 0;
+}
+
+/* Ajuste no Emoji/Ícone central para não ficar cortado */
+.audio-avatar span {
+    font-size: 24px;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.audio-mic-icon {
+    position: absolute;
+    /* Ajuste de posição para encaixar perfeitamente na curva do círculo */
+    bottom: 0;
+    right: 0;
+
+    /* Importante: O fundo deve ser igual ao do balão de chat (bg-card) */
+    background: var(--bg-card);
+    border-radius: 50%;
+
+    width: 20px;
+    height: 20px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    /* Estilo do Microfone */
+    font-size: 10px;
+    color: var(--text-main);
+
+    /* Sombra leve para profundidade */
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+
+    /* Borda que cria o efeito de "recorte" no círculo principal */
+    border: 2px solid var(--bg-card);
+
+    z-index: 5;
+}
+
+/* Correção para o Player de Áudio não ficar muito escuro no Dark */
+.whatsapp-audio {
+    height: 40px;
+    width: 100%;
+    /* No modo escuro, o player nativo precisa de um filtro para os ícones ficarem brancos */
+    filter: invert(100%) hue-rotate(180deg) brightness(1.5) grayscale(1);
+    opacity: 0.8;
+}
+
+/* Garante que no modo Light o player volte ao normal */
+:not(.dark) .whatsapp-audio {
+    filter: sepia(20%) saturate(70%) grayscale(1) contrast(90%);
+}
+
+
 /* ==============================
    MENSAGENS BOLHAS
 ============================== */
