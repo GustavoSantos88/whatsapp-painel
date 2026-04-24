@@ -1058,27 +1058,25 @@ function renderChat(messages) {
 
         let media = ""
 
-        if (m.has_media && m.media_path) {
-
+        if (m.has_media) {
             let url = ""
-            let fileName = ""
+            let fileName = m.media_name || "arquivo"
 
-            if (m.media_path.startsWith("blob:")) {
-
-                url = m.media_path
-                fileName = m.file_name || "arquivo"
-
-            } else {
-
-                if (m.media_path) {
-                    let path = m.media_path.replace(/^\/+/, "")
-                    url = CONFIG.SOCKET_URL + `/uploads/${m.session_id}/` + path
-                    fileName = path.split('/').pop()
+            // Se tiver path local (mensagens antigas ou flag de salvar ligada)
+            if (m.media_path) {
+                if (m.media_path.startsWith("blob:")) {
+                    url = m.media_path;
+                } else {
+                    let path = m.media_path.replace(/^\/+/, "");
+                    url = `${CONFIG.API_URL}/uploads/${m.session_id}/${path}`;
                 }
             }
+            // LÓGICA NOVA: Se NÃO tiver path, busca direto da API (Real-time)
+            else {
+                url = `${CONFIG.API_URL}/media-viewer/${m.session_id}/${m.message_id}`;
+            }
 
-            media = renderMediaMessage(url, fileName)
-
+            media = renderMediaMessage(url, fileName);
         }
 
         return `
