@@ -75,38 +75,100 @@ async function loadSessions() {
     } catch (err) { console.error(err); }
 }
 
+let visible = false;
+
+document.addEventListener("click", function (e) {
+    if (e.target && e.target.id === "toggleBtn") {
+        const el = document.getElementById("tokenValue");
+
+        visible = !visible;
+
+        if (visible) {
+            el.style.filter = "none";
+            e.target.textContent = "🙈";
+        } else {
+            el.style.filter = "blur(5px)";
+            e.target.textContent = "👁️";
+        }
+    }
+
+    if (e.target && e.target.id === "copyBtn") {
+        const text = document.getElementById("tokenValue").textContent;
+        navigator.clipboard.writeText(text);
+        alert("Token copiado!");
+    }
+});
+
 function renderSessionCard(session) {
     const isConnecting = session.status === "connecting" || session.status === "pending";
     const isConnected = session.status === "connected";
     const statusClass = isConnected ? "green" : isConnecting ? "orange" : "red";
+    const token = localStorage.getItem("token");
 
     return `
         <div class="card session-card" id="session_${session.session_id}">
             <div class="session-header">
                 <div style="display: flex; flex-direction: column;">
-                    <span id="msgSession" style="font-weight: 700;padding:5px; border:none; border-bottom:1px solid var(--border-color); background:var(--bg-card); font-weight:bold;">WhatsApp Web</span>
-                    
-                    <small id="msgSession" style="font-weight: 700;padding:5px; background:var(--bg-card); font-weight:bold;">${session.profile_name ? session.profile_name : '+' + session.phone_number}</small>
-                </div>
-                <span class="status ${statusClass}">${session.status}</span>
+                    <span id="msgSession" style="font-weight: 700;padding:5px; border:none; border-bottom:1px solid var(--border-color); background:var(--bg-card); font-weight:bold;">WhatsApp Web</span>                                    
+                    <small id="msgSession" style="font-weight: 700;padding:5px; background:var(--bg-card); font-weight:bold;">${session.profile_name ? session.profile_name : '+' + session.phone_number || ''}</small>
+                    <span id="msgSession" style="font-weight: 700;border:none; border-bottom:1px solid var(--border-color); background:var(--bg-card); font-weight:bold;"></span>                    
+                </div>                               
+                                
+                <span class="status ${statusClass}">${session.status}</span> 
             </div>
 
-            <div class="qr-container">
-                ${isConnected ?
-            '<div style="text-align:center;"><span style="font-size: 50px;">✅</span><p style="color:#059669; font-weight:bold; margin-top:10px;">Conectado</p></div>' :
-            isConnecting ?
-                '<div class="loader-spinner"></div><p style="margin-top:15px; font-size: 13px; color: #4b5563;">Gerando QR Code...</p>' :
-                '<p style="color: #9ca3af;">Desconectado</p>'
-        }
+            <div class="qr-container">           
+                ${isConnected ? '<div style="text-align:center;"><span style="font-size: 50px;">✅</span><p style="color:#059669; font-weight:bold; margin-top:10px;">Conectado</p></div>' :
+            isConnecting ? '<div class="loader-spinner"></div><p style="margin-top:15px; font-size: 13px; color: #4b5563;">Gerando QR Code...</p>' : '<p style="color: #9ca3af;">Desconectado</p>'}
+                
+                ${isConnected ? `
+                    <div style="text-align:center; font-size: 12px;">
+                    
+                    <div style="margin-bottom: 12px;">
+                        <div style="font-weight: bold; margin-bottom: 3px;">Session ID:</div>
+                        <div style="display: inline-block; max-width: 500px; word-break: break-word;">
+                        ${session.session_id || "N/A"}
+                        </div>
+                    </div>
+
+                    <div>
+                        <div style="font-weight: bold; margin-bottom: 5px;">Token:</div>
+
+                        <!-- TOKEN -->
+                        <div id="tokenValue" 
+                            style="max-width: 500px; word-break: break-word; filter: blur(5px); margin-bottom: 6px;">
+                        ${token || "N/A"}
+                        </div>
+
+                        <!-- BOTÕES -->
+                        <div style="display: flex; justify-content: center; gap: 8px;">
+                        
+                        <button id="toggleBtn" title="Mostrar/Ocultar Token"
+                                style="cursor: pointer; background: none; border: none; font-size: 14px;">
+                            👁️
+                        </button>
+
+                        <button id="copyBtn" title="Copiar Token"
+                                style="cursor: pointer; font-size: 11px;">
+                            📋
+                        </button>
+
+                        </div>
+                    </div>
+
+                    </div>
+                    ` : ''}
+
             </div>
 
             <div class="session-actions" style="margin-top:20px; display:flex; gap:10px;">
-                ${!isConnected ? `
+                ${!isConnected ? `                    
                     <button class="primary-btn" style="flex: 2; margin-bottom: 0; background:#25d366;" 
                             onclick="window.socket.emit('request_session_qr', {sessionId:'${session.session_id}'})">
                         🔄 Atualizar
                     </button>
-                ` : ''}
+                ` : ''}                            
+
                 <button class="danger-btn" style="flex: 1;" onclick="deleteSession('${session.session_id}')">
                     Excluir
                 </button>

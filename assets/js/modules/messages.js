@@ -119,6 +119,35 @@ function renderMediaMessage(url, fileName) {
 
     const mediaStyle = `max-width: 220px; width: 100%; height: auto; border-radius: 8px; display: block; margin: 5px 0;`;
 
+
+    // 📍 DETECTA SE O BODY É UMA MINIATURA DE LOCALIZAÇÃO (BASE64)
+    // Miniaturas JPEG em base64 geralmente começam com "/9j/"
+    if (url.startsWith('/9j/') || (fileName && fileName.includes("lat:"))) {
+
+        // Se for o base64 puro, montamos o SRC da imagem
+        const imgSrc = url.startsWith('/9j/') ? `data:image/jpeg;base64,${url}` : url;
+
+        // Extraímos as coordenadas do fileName (se você salvou como lat:...,lng:...)
+        let mapUrl = "#";
+        if (fileName && fileName.includes("lat:")) {
+            const coords = fileName.replace("lat:", "").replace("lng:", "").split(",");
+            mapUrl = `https://google.com{coords[0]},${coords[1]}`;
+        }
+
+        return `
+        <div class="location-container" style="max-width: 250px; border-radius: 8px; overflow: hidden; border: 1px solid #e9ecef; cursor: pointer; margin: 5px 0; background: #fff;" onclick="window.open('${mapUrl}', '_blank')">
+            <div style="position: relative;">
+                <img src="${imgSrc}" style="width: 100%; display: block; min-height: 150px; object-fit: cover;">
+                <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 30px;">📍</div>
+            </div>
+            <div style="padding: 10px; display: flex; align-items: center; gap: 8px;">
+                <div style="line-height: 1.2;">
+                    <strong style="display: block; font-size: 13px; color: #333;">Localização Recebida</strong>
+                    <small style="color: #25D366; font-weight: bold; font-size: 11px;">Ver no Google Maps</small>
+                </div>
+            </div>
+        </div>`;
+    }
     // 🖼️ IMAGENS
     if (["jpg", "jpeg", "png", "gif", "webp"].includes(ext)) {
         return `<img src="${url}" style="${mediaStyle} cursor:pointer;" onclick="window.open('${url}', '_blank')">`;
@@ -161,6 +190,41 @@ function renderMediaMessage(url, fileName) {
             <span style="font-size:18px;">📄</span>
             <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 180px;">${fileName}</span>
         </a>`;
+}
+
+function renderLocationMessage(base64Data, mediaName) {
+    if (!base64Data) return "";
+
+    // Monta a imagem a partir do body que você mandou (começa com /9j/)
+    const imgSrc = base64Data.startsWith('data:image')
+        ? base64Data
+        : `data:image/jpeg;base64,${base64Data.trim()}`;
+
+    // Tenta montar o link do Google Maps se houver coordenadas no mediaName
+    let mapUrl = "https://google.com";
+    let hasCoords = false;
+
+    if (mediaName && mediaName.includes('lat:')) {
+        try {
+            const coords = mediaName.replace('lat:', '').replace('lng:', '').split(',');
+            mapUrl = `https://google.com/search/?api=1&query=${coords[0]},${coords[1]}`;
+            hasCoords = true;
+        } catch (e) { }
+    }
+
+    return `
+    <div class="location-box" style="max-width: 250px; border: 1px solid #e1e4e8; border-radius: 10px; overflow: hidden; background: #fff; cursor: ${hasCoords ? 'pointer' : 'default'}; margin: 5px 0; box-shadow: 0 2px 8px rgba(0,0,0,0.1);" ${hasCoords ? `onclick="window.open('${mapUrl}', '_blank')"` : ''}>
+        <div style="position: relative; background: #f0f0f0;">
+            <img src="${imgSrc}" style="width: 100%; height: 150px; object-fit: cover; display: block;">
+            <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 32px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.4));">📍</div>
+        </div>
+        <div style="padding: 12px; background: #fff;">
+            <strong style="display: block; font-size: 14px; color: #111;">Localização Recebida</strong>
+            <span style="font-size: 12px; color: ${hasCoords ? '#25D366' : '#999'}; font-weight: 600;">
+                ${hasCoords ? 'Ver no Google Maps' : 'Coordenadas indisponíveis'}
+            </span>
+        </div>
+    </div>`;
 }
 
 
@@ -605,8 +669,6 @@ function messagesPage() {
     </header>
 
     <div class="chat-layout">
-
-        <!-- OVERLAY MOBILE -->
         <div id="chatOverlay" class="chat-overlay" onclick="closeSidebar()"></div>
 
         <!-- Barra Lateral -->
@@ -619,7 +681,6 @@ function messagesPage() {
             </div>
 
             <div id="contactsModal" class="contacts-modal"></div>
-
             <div id="conversationsList">
                 <div class="center" style="padding:20px; font-size:13px; color:var(--text-muted);">
                     Carregando conversas...
@@ -629,14 +690,9 @@ function messagesPage() {
 
         <!-- Área de Mensagens -->
         <div class="chat-messages">
-
-            <!-- HEADER COM BOTÃO MOBILE -->
             <div id="chatHeader" class="chat-header">
                 <span class="mobile-toggle" onclick="toggleSidebar()">☰</span>
-
-                <div id="chatHeaderContent">
-                    Selecione uma conversa
-                </div>
+                <div id="chatHeaderContent">Selecione uma conversa</div>
             </div>
 
             <div id="chatMessages">
@@ -650,19 +706,27 @@ function messagesPage() {
             <div class="chat-input" style="padding:15px; background:var(--bg-card); border-top:1px solid var(--border-color); display:flex; gap:10px; align-items:center;">
                 
                 <input type="file" id="chatFile" multiple style="display:none">                
-                <button class="primary-btn" style="margin:0; padding:10px;" onclick="document.getElementById('chatFile').click()">Anexo</button>
+                <button class="primary-btn" style="margin:0; padding:10px;" onclick="document.getElementById('chatFile').click()">📎</button>
 
-                <button id="emojiBtn" class="primary-btn" style="margin:0; padding:10px;" onclick="toggleEmojiPicker()">Emojis</button>
+                <button id="emojiBtn" class="primary-btn" style="margin:0; padding:10px;" onclick="toggleEmojiPicker()">😊</button>
                 <div id="emojiPicker" class="emoji-box"></div>
 
                 <input id="chatText" placeholder="Escreva uma mensagem..." autofocus spellcheck="true" lang="pt-br"
                     style="flex:1; padding:12px; border-radius:8px; border:1px solid var(--border-color); background:var(--input-bg); color:var(--text-main);">
 
+                <!-- BOTÃO DE GRAVAR ÁUDIO -->
+                <button id="recordAudioBtn" class="primary-btn" 
+                    style="margin:0; padding:10px; background: #25D366; border-color: #25D366;"
+                    onmousedown="startRecording()" 
+                    onmouseup="stopRecording()"
+                    ontouchstart="startRecording()" 
+                    ontouchend="stopRecording()">
+                    🎤
+                </button>
+
                 <button class="primary-btn" style="margin:0; padding:10px 20px;" onclick="sendChatMessage()">Enviar</button>
             </div>
-
         </div>
-        <div id="chatOverlay" class="chat-overlay" onclick="closeSidebar()"></div>
     </div>`
 }
 
@@ -1124,41 +1188,49 @@ function renderChat(messages) {
 }
 
 async function loadPendingMedias(messages) {
-    // Filtramos apenas mensagens que têm mídia mas não têm path local
     const pending = messages.filter(m => m.has_media && !m.media_path);
 
     for (const m of pending) {
         const safeId = `media-${m.message_id.replace(/[^a-zA-Z0-9]/g, '')}`;
         const element = document.getElementById(safeId);
 
-        // Se o elemento não existe ou já foi processado (não tem mais a classe loader)
         if (!element || !element.classList.contains('media-loader')) continue;
 
         try {
+            // Dentro do seu loop for (const m of pending)
+            const bodyData = m.body ? String(m.body).trim() : "";
+
+            // console.log("Processando mídia para mensagem:", m.message_id, "com body:", bodyData);
+
+            // Se começar com /9j/ é a miniatura de localização que o WA manda
+            const isLocation = bodyData.startsWith('/9j/') || bodyData.startsWith('data:image');
+            // console.log("É mídia de localização?", isLocation);
+            if (isLocation) {
+                element.outerHTML = renderLocationMessage(bodyData, m.media_name);
+                continue; // Não chama o Axios, pois a imagem já está aqui
+            }
+
+            // --- Lógica normal para arquivos reais ---
             const ext = m.media_name?.split('.').pop()?.toLowerCase();
 
-            // 🎥 VÍDEO: Usa URL DIRETA para permitir Streaming/Preview
             if (['mp4', 'webm', 'ogg'].includes(ext)) {
-                // Passamos o token na Query String para a rota direta
                 const directUrl = `${CONFIG.API_URL}/media-viewer/${m.session_id}/${m.message_id}`;
                 element.outerHTML = renderMediaMessage(directUrl, m.media_name);
-            }
-            // 🖼️/🎵 IMAGEM, ÁUDIO E OUTROS: Via Axios Blob
-            else {
+            } else {
                 const blobUrl = await getMediaBlobViaAxios(m.session_id, m.message_id);
                 if (blobUrl) {
-                    // CORREÇÃO: Apenas uma chamada ao renderMediaMessage
                     element.outerHTML = renderMediaMessage(blobUrl, m.media_name || "arquivo");
                 } else {
                     element.innerHTML = "<small style='color:red'>❌ Erro</small>";
                 }
             }
         } catch (err) {
-            console.error("Erro ao processar mídia pendente:", err);
+            console.error("Erro ao processar mídia:", err);
             element.innerHTML = "<small>⚠️ Indisponível</small>";
         }
     }
 }
+
 
 async function getMediaBlobViaAxios(sessionId, messageId) {
     try {
@@ -1171,7 +1243,6 @@ async function getMediaBlobViaAxios(sessionId, messageId) {
         return null;
     }
 }
-
 
 /* =========================
    FILE
@@ -1296,6 +1367,65 @@ async function pollingLoop() {
         setTimeout(pollingLoop, 4000)
     }
 }
+
+let mediaRecorder = null;
+let audioChunks = [];
+
+async function startRecording() {
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+
+        // Tenta o formato que o Chrome mais gosta
+        mediaRecorder = new MediaRecorder(stream);
+        audioChunks = [];
+
+        mediaRecorder.ondataavailable = (event) => {
+            audioChunks.push(event.data);
+        };
+
+        mediaRecorder.onstop = async () => {
+            const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+            await sendAudioMessage(audioBlob);
+            stream.getTracks().forEach(track => track.stop()); // Desliga o microfone
+        };
+
+        mediaRecorder.start();
+        document.getElementById("recordAudioBtn").classList.add("recording-active");
+    } catch (err) {
+        console.error("Erro ao acessar microfone:", err);
+        alert("Certifique-se de estar usando HTTPS e dê permissão ao microfone.");
+    }
+}
+
+async function stopRecording() {
+    if (mediaRecorder && mediaRecorder.state === "recording") {
+        // Removemos o onstop daqui de dentro para não dar conflito
+        mediaRecorder.stop();
+        document.getElementById("recordAudioBtn").classList.remove("recording-active");
+    }
+}
+
+async function sendAudioMessage(blob) {
+    if (!currentSession || !currentChatNumber) return;
+
+    const formData = new FormData();
+    formData.append("sessionId", currentSession);
+    formData.append("number", currentChatNumber);
+
+    // IMPORTANTE: O nome 'voice.audio' é o gatilho que o seu backend usa
+    // O tipo deve ser webm (padrão do navegador) para o FFmpeg converter no back
+    const audioFile = new File([blob], "voice.audio", { type: 'audio/webm' });
+    formData.append("files", audioFile);
+
+    try {
+        await axios.post(CONFIG.API_URL + "/send", formData, {
+            headers: { "Content-Type": "multipart/form-data" }
+        });
+    } catch (err) {
+        console.error("Erro ao enviar áudio:", err);
+    }
+}
+
 
 /* =========================
    ENVIAR MENSAGEM

@@ -593,6 +593,22 @@ body {
     filter: sepia(20%) saturate(70%) grayscale(1) contrast(90%);
 }
 
+#recordAudioBtn {
+    transition: all 0.3s ease;
+}
+
+#recordAudioBtn.recording-active {
+    background: #ff4b4b !important; /* Vermelho ao gravar */
+    border-color: #ff4b4b !important;
+    transform: scale(1.2);
+    animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(255, 75, 75, 0.7); }
+    70% { box-shadow: 0 0 0 10px rgba(255, 75, 75, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(255, 75, 75, 0); }
+}
 
 /* ==============================
    MENSAGENS BOLHAS
