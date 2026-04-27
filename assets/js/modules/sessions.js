@@ -1,11 +1,15 @@
 if (!window.qrCache) window.qrCache = {};
 
 function setupSocketListeners() {
+
     const socket = window.socket;
     if (!socket) {
         setTimeout(setupSocketListeners, 1000);
         return;
     }
+
+    if (window.__socketInitialized === socket.id) return;
+    window.__socketInitialized = socket.id;
 
     socket.off("qr_code");
     socket.on("qr_code", ({ sessionId, qrImageBase64 }) => {
@@ -19,6 +23,22 @@ function setupSocketListeners() {
     socket.on("session_status_update", (data) => {
         updateSessionStatus(data.sessionId, data.status);
     });
+
+    // AQUI ENTRA O NOVO EVENTO
+    // socket.off("session_created");
+    // socket.off("session_updated");
+
+    // socket.on("session_created", async () => {
+    //     await loadSessions();
+    // });
+
+    // socket.on("session_updated", async () => {
+    //     await loadSessions();
+    // });
+
+    // socket.on("session_status_update", async () => {
+    //     await loadSessions();
+    // });
 }
 
 function sessionsPage() {
@@ -32,7 +52,7 @@ function sessionsPage() {
         <div class="sessions-view">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
                
-                <button class="primary-btn" onclick="createSession()" style="margin-bottom:0; background: #25d366;">
+                <button class="primary-btn" onclick="createSession(event)" style="margin-bottom:0; background: #25d366;">
                     + Nova Instância
                 </button>
             </div>
@@ -110,7 +130,14 @@ function renderSessionCard(session) {
             <div class="session-header">
                 <div style="display: flex; flex-direction: column;">
                     <span id="msgSession" style="font-weight: 700;padding:5px; border:none; border-bottom:1px solid var(--border-color); background:var(--bg-card); font-weight:bold;">WhatsApp Web</span>                                    
-                    <small id="msgSession" style="font-weight: 700;padding:5px; background:var(--bg-card); font-weight:bold;">${session.profile_name ? session.profile_name : '+' + session.phone_number || ''}</small>
+                    
+                    <small id="msgSession" style="font-weight:700; padding:5px; background:var(--bg-card);">
+                    ${session.profile_name
+            ? session.profile_name
+            : (session.phone_number ? '+ ' + session.phone_number : '')
+        }
+                    </small>
+
                     <span id="msgSession" style="font-weight: 700;border:none; border-bottom:1px solid var(--border-color); background:var(--bg-card); font-weight:bold;"></span>                    
                 </div>                               
                                 
@@ -143,13 +170,11 @@ function renderSessionCard(session) {
                         <!-- BOTÕES -->
                         <div style="display: flex; justify-content: center; gap: 8px;">
                         
-                        <button id="toggleBtn" title="Mostrar/Ocultar Token"
-                                style="cursor: pointer; background: none; border: none; font-size: 14px;">
+                        <button id="toggleBtn" title="Mostrar/Ocultar Token" style="cursor: pointer; background: none; border: none; font-size: 14px;">
                             👁️
                         </button>
 
-                        <button id="copyBtn" title="Copiar Token"
-                                style="cursor: pointer; font-size: 11px;">
+                        <button id="copyBtn" title="Copiar Token" style="cursor: pointer; font-size: 11px;">
                             📋
                         </button>
 
@@ -163,10 +188,10 @@ function renderSessionCard(session) {
 
             <div class="session-actions" style="margin-top:20px; display:flex; gap:10px;">
                 ${!isConnected ? `                    
-                    <button class="primary-btn" style="flex: 2; margin-bottom: 0; background:#25d366;" 
+                    <!-- <button class="primary-btn" style="flex: 2; margin-bottom: 0; background:#25d366;" 
                             onclick="window.socket.emit('request_session_qr', {sessionId:'${session.session_id}'})">
                         🔄 Atualizar
-                    </button>
+                    </button> -->
                 ` : ''}                            
 
                 <button class="danger-btn" style="flex: 1;" onclick="deleteSession('${session.session_id}')">
@@ -218,10 +243,11 @@ function updateSessionStatus(sessionId, status) {
             if (refreshBtn) refreshBtn.remove();
         }
         delete window.qrCache[sessionId];
+        loadSessions();
     }
 }
 
-async function createSession() {
+async function createSession(event) {
     const btn = event.currentTarget;
     try {
         btn.disabled = true;
@@ -241,7 +267,7 @@ async function deleteSession(id) {
     try {
         await axios.delete(`${CONFIG.API_URL}/sessions/${id}`);
         delete window.qrCache[id];
-        loadSessions();
+        await loadSessions();
     } catch (err) {
         toast('Erro ao deletar sessão', 'error')
     }
