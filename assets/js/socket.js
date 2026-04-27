@@ -24,12 +24,15 @@ function initSocket() {
     console.log("🔌 Iniciando nova conexão com o servidor de Socket...");
 
     // Inicializa a conexão com transporte fixo para evitar delay
-    window.socket = io(CONFIG.SOCKET_URL, {
-        transports: ["websocket"], // WebSocket puro é mais rápido que polling
+    window.socket = io(CONFIG.SOCKET_URL, {               
+        transports: ["polling", "websocket"], // Começa com polling e faz upgrade rápido
+        upgrade: true, // Permite subir para websocket assim que estabilizar
         reconnection: true,
         reconnectionAttempts: Infinity,
         reconnectionDelay: 1000,
-        autoConnect: true
+        autoConnect: true,
+        // Adicione isso para evitar problemas de cache no handshake
+        rememberUpgrade: true
     });
 
     // --- EVENTOS ---

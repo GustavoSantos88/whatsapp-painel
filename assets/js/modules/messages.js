@@ -275,8 +275,10 @@ function getLastMessagePreview(messages) {
         const m = messages[i];
         let texto = "";
 
+        const labels = ['[Áudio]', '[Foto]', '[Vídeo]', '[Arquivo]'];
+
         // 1. TEXTO (Ignora as tags padrão para forçar a detecção de ícone abaixo)
-        if (m.body && m.body !== '[Mídia recebida]' && m.body !== '[Mídia enviada]') {
+        if (m.body && m.body !== labels.includes(m.body) && m.body !== labels.includes(m.body)) {
             texto = m.body;
         }
         // 2. MÍDIA (Identifica pelo nome do arquivo salvo no banco)
@@ -1063,7 +1065,7 @@ function formatMessageText(text) {
 
     // =============================================================
     // BLOCO NOVO: ELIMINAR ETIQUETAS DO BACKEND
-    // =============================================================
+    // =============================================================   
     const tagsParaIgnorar = [
         '[Áudio]', '[Foto]', '[Vídeo]', '[Arquivo]',
         '[Mídia recebida]', '[Mídia enviada]'
@@ -1160,13 +1162,15 @@ function renderChat(messages) {
                     </div>`;
         }
 
+        const labels = ['[Áudio]', '[Foto]', '[Vídeo]', '[Arquivo]'];
+
         return `
             ${daySeparator ? `<div style="text-align:center;">${daySeparator}</div>` : ''}
-            ${((m.body && m.body.trim() !== "") && m.body !== '[Mídia recebida]') || m.has_media ? `
+            ${((m.body && m.body.trim() !== "") && m.body !== labels.includes(m.body)) || m.has_media ? `
                 <div class="chat-message ${type}">
                     <div class="chat-bubble">
                         ${mediaHtml}                            
-                        ${(m.body && m.body !== '[Mídia recebida]') ? `<div>${formatMessageText(m.body)}</div>` : ''}
+                        ${(m.body && m.body !== labels.includes(m.body)) ? `<div>${formatMessageText(m.body)}</div>` : ''}
                         <div class="msg-meta" style="text-align: right;">
                             <span>${formatTime(m.timestamp)}</span>
                             <span>${m.status || ""}</span>
@@ -1230,7 +1234,6 @@ async function loadPendingMedias(messages) {
         }
     }
 }
-
 
 async function getMediaBlobViaAxios(sessionId, messageId) {
     try {
