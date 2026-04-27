@@ -1328,7 +1328,19 @@ async function pollingLoop() {
             // 🔊 Lógica de Som e Notificação
             if (m.direction === "received" && msgTime > lastSeen && !notifiedMessages.has(m.id)) {
                 notifiedMessages.add(m.id);
-                const preview = m.body && m.body !== '[Mídia recebida]' ? m.body : "📎 Mídia";
+
+                // Agora ajustamos o preview para aceitar esses novos rótulos ou o texto da mensagem
+                const labels = ['[Áudio]', '[Foto]', '[Vídeo]', '[Arquivo]'];
+
+                // Se m.body for um dos labels, ele adiciona o emoji na frente. 
+                // Se for um texto comum, exibe o texto. 
+                // Se estiver vazio, exibe o padrão "📎 Mídia".
+                const preview = m.body
+                    ? (labels.includes(m.body) ? `📎 ${m.body}` : m.body)
+                    : "📎 Mídia";
+
+                // Antigo
+                // const preview = m.body && m.body !== '[Mídia recebida]' ? m.body : "📎 Mídia";
 
                 // Passamos o number para a função decidir se toca o som
                 showNotification(preview, number);
