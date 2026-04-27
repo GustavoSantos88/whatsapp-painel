@@ -188,10 +188,10 @@ function renderSessionCard(session) {
 
             <div class="session-actions" style="margin-top:20px; display:flex; gap:10px;">
                 ${!isConnected ? `                    
-                    <!-- <button class="primary-btn" style="flex: 2; margin-bottom: 0; background:#25d366;" 
+                     <button class="primary-btn" style="flex: 2; margin-bottom: 0; background:#25d366;" 
                             onclick="window.socket.emit('request_session_qr', {sessionId:'${session.session_id}'})">
                         🔄 Atualizar
-                    </button> -->
+                    </button> 
                 ` : ''}                            
 
                 <button class="danger-btn" style="flex: 1;" onclick="deleteSession('${session.session_id}')">
